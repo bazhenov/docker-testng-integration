@@ -1,0 +1,212 @@
+[
+  {
+    "Id": "5491646b1d8ca13d11feccf0b68b3c1b38986760232ec230d7ed55d608b56d29",
+    "Created": "2016-07-22T01:10:40.566732723Z",
+    "Path": "/usr/bin/tini",
+    "Args": [
+      "--",
+      "/opt/conda/bin/jupyter",
+      "notebook"
+    ],
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 4584,
+      "ExitCode": 0,
+      "Error": "",
+      "StartedAt": "2016-08-23T01:13:34.906227618Z",
+      "FinishedAt": "2016-08-17T23:46:51.328104539Z"
+    },
+    "Image": "sha256:3ac397d80a80d17cb6740cca4822f58574afba8cd62c427da06a738aee0b3de5",
+    "ResolvConfPath": "/var/lib/docker/containers/5491646b1d8ca13d11feccf0b68b3c1b38986760232ec230d7ed55d608b56d29/resolv.conf",
+    "HostnamePath": "/var/lib/docker/containers/5491646b1d8ca13d11feccf0b68b3c1b38986760232ec230d7ed55d608b56d29/hostname",
+    "HostsPath": "/var/lib/docker/containers/5491646b1d8ca13d11feccf0b68b3c1b38986760232ec230d7ed55d608b56d29/hosts",
+    "LogPath": "/var/lib/docker/containers/5491646b1d8ca13d11feccf0b68b3c1b38986760232ec230d7ed55d608b56d29/5491646b1d8ca13d11feccf0b68b3c1b38986760232ec230d7ed55d608b56d29-json.log",
+    "Name": "/jupyter",
+    "RestartCount": 0,
+    "Driver": "aufs",
+    "MountLabel": "",
+    "ProcessLabel": "",
+    "AppArmorProfile": "",
+    "ExecIDs": null,
+    "HostConfig": {
+      "Binds": [
+        "/Users/bazhenov/jupyter:/home/ipython:rw"
+      ],
+      "ContainerIDFile": "",
+      "LogConfig": {
+        "Type": "json-file",
+        "Config": {}
+      },
+      "NetworkMode": "bridge",
+      "PortBindings": {
+        "8888/tcp": [
+          {
+            "HostIp": "",
+            "HostPort": "1500"
+          }
+        ]
+      },
+      "RestartPolicy": {
+        "Name": "",
+        "MaximumRetryCount": 0
+      },
+      "AutoRemove": false,
+      "VolumeDriver": "",
+      "VolumesFrom": [],
+      "CapAdd": null,
+      "CapDrop": null,
+      "Dns": [],
+      "DnsOptions": [],
+      "DnsSearch": [],
+      "ExtraHosts": null,
+      "GroupAdd": null,
+      "IpcMode": "",
+      "Cgroup": "",
+      "Links": null,
+      "OomScoreAdj": 0,
+      "PidMode": "",
+      "Privileged": false,
+      "PublishAllPorts": false,
+      "ReadonlyRootfs": false,
+      "SecurityOpt": null,
+      "UTSMode": "",
+      "UsernsMode": "",
+      "ShmSize": 67108864,
+      "Runtime": "runc",
+      "ConsoleSize": [
+        0,
+        0
+      ],
+      "Isolation": "",
+      "CpuShares": 0,
+      "Memory": 0,
+      "CgroupParent": "",
+      "BlkioWeight": 0,
+      "BlkioWeightDevice": null,
+      "BlkioDeviceReadBps": null,
+      "BlkioDeviceWriteBps": null,
+      "BlkioDeviceReadIOps": null,
+      "BlkioDeviceWriteIOps": null,
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "",
+      "CpusetMems": "",
+      "Devices": null,
+      "DiskQuota": 0,
+      "KernelMemory": 0,
+      "MemoryReservation": 0,
+      "MemorySwap": 0,
+      "MemorySwappiness": -1,
+      "OomKillDisable": false,
+      "PidsLimit": 0,
+      "Ulimits": null,
+      "CpuCount": 0,
+      "CpuPercent": 0,
+      "IOMaximumIOps": 0,
+      "IOMaximumBandwidth": 0
+    },
+    "GraphDriver": {
+      "Name": "aufs",
+      "Data": null
+    },
+    "Mounts": [
+      {
+        "Source": "/Users/bazhenov/jupyter",
+        "Destination": "/home/ipython",
+        "Mode": "rw",
+        "RW": true,
+        "Propagation": "rprivate"
+      }
+    ],
+    "Config": {
+      "Hostname": "5491646b1d8c",
+      "Domainname": "",
+      "User": "",
+      "AttachStdin": false,
+      "AttachStdout": false,
+      "AttachStderr": false,
+      "ExposedPorts": {
+        "8888/tcp": {}
+      },
+      "Tty": false,
+      "OpenStdin": false,
+      "StdinOnce": false,
+      "Env": [
+        "no_proxy=*.local, 169.254/16, *.loc",
+        "HOME=/",
+        "PATH=/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "LANG=C.UTF-8"
+      ],
+      "Cmd": [
+        "/opt/conda/bin/jupyter",
+        "notebook"
+      ],
+      "Image": "dockerbuild.dev/jupyter",
+      "Volumes": {
+        "/home/ipython": {}
+      },
+      "WorkingDir": "/home/ipython",
+      "Entrypoint": [
+        "/usr/bin/tini",
+        "--"
+      ],
+      "OnBuild": null,
+      "Labels": {
+        "Description": "Jupyter Notebook container with OpenCV",
+        "com.docker.compose.config-hash": "24b63fcfebbc2e876fe43dedeee8732513a9c815bb7fe1f6a82cce07d1d875f7",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.oneoff": "False",
+        "com.docker.compose.project": "containers",
+        "com.docker.compose.service": "jupyter",
+        "com.docker.compose.version": "1.8.0-rc2"
+      }
+    },
+    "NetworkSettings": {
+      "Bridge": "",
+      "SandboxID": "3fca066578ef26d92312d4771a753525d78ef0fc1d823937f5fa31c45978b252",
+      "HairpinMode": false,
+      "LinkLocalIPv6Address": "",
+      "LinkLocalIPv6PrefixLen": 0,
+      "Ports": {
+        "8888/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "1500"
+          }
+        ]
+      },
+      "SandboxKey": "/var/run/docker/netns/3fca066578ef",
+      "SecondaryIPAddresses": null,
+      "SecondaryIPv6Addresses": null,
+      "EndpointID": "8754dcf2c528d3c73d411fd75b4abe7826f2d3026a6feb90ffe3893c880ad1db",
+      "Gateway": "172.17.0.1",
+      "GlobalIPv6Address": "",
+      "GlobalIPv6PrefixLen": 0,
+      "IPAddress": "172.17.0.2",
+      "IPPrefixLen": 16,
+      "IPv6Gateway": "",
+      "MacAddress": "02:42:ac:11:00:02",
+      "Networks": {
+        "bridge": {
+          "IPAMConfig": null,
+          "Links": null,
+          "Aliases": null,
+          "NetworkID": "90f7a4a13f9eeb4714653495c064b6c7406b65a0a33d66f682218e8857853b09",
+          "EndpointID": "8754dcf2c528d3c73d411fd75b4abe7826f2d3026a6feb90ffe3893c880ad1db",
+          "Gateway": "172.17.0.1",
+          "IPAddress": "172.17.0.2",
+          "IPPrefixLen": 16,
+          "IPv6Gateway": "",
+          "GlobalIPv6Address": "",
+          "GlobalIPv6PrefixLen": 0,
+          "MacAddress": "02:42:ac:11:00:02"
+        }
+      }
+    }
+  }
+]
