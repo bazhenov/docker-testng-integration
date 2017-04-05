@@ -52,17 +52,25 @@ public class DockerTestNgListener extends TestListenerAdapter {
 
 	private String runContainer(Container annotation) throws IOException, InterruptedException {
 		ContainerExecution execution = new ContainerExecution(annotation.image(), annotation.command());
+		fillExposePorts(annotation, execution);
+		fillEnvironmentVariables(annotation, execution);
+		execution.setRemoveAfterCompletion(annotation.removeAfterCompletion());
+		return docker.start(execution);
+	}
+
+	private static void fillExposePorts(Container annotation, ContainerExecution execution) {
 		Set<Integer> ports = new HashSet<>();
 		for (int i : annotation.exposePorts()) {
 			ports.add(i);
 		}
 		execution.setExposePorts(ports);
-		execution.setRemoveAfterCompletion(annotation.removeAfterCompletion());
+	}
+
+	private static void fillEnvironmentVariables(Container annotation, ContainerExecution execution) {
 		for (String value : annotation.environment()) {
 			String[] parts = value.split("=", 2);
 			execution.addEnvironment(parts[0], parts[1]);
 		}
-		return docker.start(execution);
 	}
 
 	@Override

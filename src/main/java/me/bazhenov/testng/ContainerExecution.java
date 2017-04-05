@@ -5,6 +5,7 @@ import java.util.*;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("WeakerAccess")
 public class ContainerExecution {
 
 	private final String image;

@@ -19,22 +19,40 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.slf4j.LoggerFactory.getLogger;
 
+@SuppressWarnings("WeakerAccess")
 public final class Docker implements Closeable {
 
 	private static final Logger log = getLogger(Docker.class);
 
-	private final Random rnd = new Random();
 	private final String pathToDocker = "docker";
-	private final List<String> containersToRemove = new ArrayList<>();
+	private final Set<String> containersToRemove = new HashSet<>();
 	private ObjectMapper jsonReader = new ObjectMapper();
-	;
 
 	public String executeAndReturnOutput(ContainerExecution execution) throws IOException, InterruptedException {
-		List<String> cmd = prepareDockerCommand(execution, "--rm");
-		return doExecuteAndGetOutput(cmd);
+		List<String> cmd = prepareDockerCommand(execution, "--rm", "-l", "testng");
+		return doExecuteAndGetFullOutput(cmd);
 	}
 
-	private static String doExecuteAndGetOutput(List<String> cmd) throws IOException, InterruptedException {
+	public String start(ContainerExecution execution) throws IOException, InterruptedException {
+		List<String> cmd = prepareDockerCommand(execution, "-d", "-l", "testng");
+
+		String id = doExecuteAndGetFullOutput(cmd).trim();
+		if (execution.isRemoveAfterCompletion())
+			containersToRemove.add(id);
+		checkContainerState(id, "running");
+
+		Set<Integer> exposePorts = execution.getExposePorts();
+		if (!exposePorts.isEmpty())
+			waitForPorts(id, exposePorts);
+
+		return id;
+	}
+
+	private static String doExecuteAndGetFullOutput(List<String> cmd) throws IOException, InterruptedException {
+		return readFully(doExecute(cmd).getInputStream());
+	}
+
+	private static Process doExecute(List<String> cmd) throws IOException, InterruptedException {
 		Process process = runProcess(cmd);
 
 		int statusCode = process.waitFor();
@@ -43,7 +61,7 @@ public final class Docker implements Closeable {
 				+ ". Output: " + readFully(process.getErrorStream()));
 		}
 
-		return readFully(process.getInputStream());
+		return process;
 	}
 
 	private static Process runProcess(List<String> cmd) throws IOException {
@@ -73,6 +91,9 @@ public final class Docker implements Closeable {
 			cmd.add(i.getKey() + "=" + i.getValue());
 		}
 
+		if (execution.isRemoveAfterCompletion())
+			cmd.add("--rm");
+
 		cmd.add(execution.getImage());
 		cmd.addAll(execution.getCommand());
 		return cmd;
@@ -84,28 +105,9 @@ public final class Docker implements Closeable {
 			.collect(joining(" "));
 	}
 
-	private String generateUniqName() {
-		return "cont-" + rnd.nextInt(Short.MAX_VALUE);
-	}
-
 	static String readFully(InputStream stream) {
 		Scanner scanner = new Scanner(stream).useDelimiter("\\A");
 		return scanner.next();
-	}
-
-	public String start(ContainerExecution execution) throws IOException, InterruptedException {
-		List<String> command = prepareDockerCommand(execution, "-d", "-l", "testng");
-
-		String id = doExecuteAndGetOutput(command).trim();
-		if (execution.isRemoveAfterCompletion())
-			containersToRemove.add(id);
-		checkContainerState(id, "running");
-
-		Set<Integer> exposePorts = execution.getExposePorts();
-		if (!exposePorts.isEmpty())
-			waitForPorts(id, exposePorts);
-
-		return id;
 	}
 
 	private void waitForPorts(String containerId, Set<Integer> ports) throws IOException, InterruptedException {
@@ -113,7 +115,7 @@ public final class Docker implements Closeable {
 		long start = currentTimeMillis();
 		boolean reported = false;
 		while (!self.isInterrupted()) {
-			String output = doExecuteAndGetOutput(asList(pathToDocker, "exec", containerId, "cat", "/proc/self/net/tcp"));
+			String output = doExecuteAndGetFullOutput(asList(pathToDocker, "exec", containerId, "cat", "/proc/self/net/tcp"));
 			Set<Integer> openPorts = readListenPorts(output);
 			if (openPorts.containsAll(ports))
 				return;
@@ -128,7 +130,7 @@ public final class Docker implements Closeable {
 	}
 
 	private void checkContainerState(String id, String expectedState) throws IOException, InterruptedException {
-		String json = doExecuteAndGetOutput(asList(pathToDocker, "inspect", id));
+		String json = doExecuteAndGetFullOutput(asList(pathToDocker, "inspect", id));
 		JsonNode root = jsonReader.readTree(json);
 		String state = root.at("/0/State/Status").asText();
 		if (!expectedState.equalsIgnoreCase(state)) {
@@ -137,7 +139,7 @@ public final class Docker implements Closeable {
 	}
 
 	public Map<Integer, Integer> getPublishedTcpPorts(String containerName) throws IOException, InterruptedException {
-		String json = doExecuteAndGetOutput(asList(pathToDocker, "inspect", containerName));
+		String json = doExecuteAndGetFullOutput(asList(pathToDocker, "inspect", containerName));
 		JsonNode root = jsonReader.readTree(json);
 
 		return doGetPublishedPorts(root);
@@ -149,9 +151,11 @@ public final class Docker implements Closeable {
 			try {
 				List<String> cmd = new ArrayList<>(asList(pathToDocker, "rm", "-f"));
 				cmd.addAll(containersToRemove);
-				doExecuteAndGetOutput(cmd);
+				doExecute(cmd);
+
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
+
 			} catch (InterruptedException e) {
 				Thread.interrupted();
 			}
