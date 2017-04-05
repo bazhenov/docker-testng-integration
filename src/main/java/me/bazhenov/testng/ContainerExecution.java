@@ -1,9 +1,6 @@
 package me.bazhenov.testng;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -12,8 +9,7 @@ public class ContainerExecution {
 
 	private final String image;
 	private final List<String> command;
-	private boolean exposeAllPorts = false;
-	private List<Integer> exposePorts = new ArrayList<>();
+	private Set<Integer> exposePorts = new HashSet<>();
 	private Map<String, String> environment = new HashMap<>();
 	private boolean removeAfterCompletion;
 
@@ -26,20 +22,12 @@ public class ContainerExecution {
 		return image;
 	}
 
-	public boolean isExposeAllPorts() {
-		return exposeAllPorts;
-	}
-
-	public List<Integer> getExposePorts() {
+	public Set<Integer> getExposePorts() {
 		return exposePorts;
 	}
 
-	public void setExposePorts(List<Integer> exposePorts) {
+	public void setExposePorts(Set<Integer> exposePorts) {
 		this.exposePorts = exposePorts;
-	}
-
-	public void setExposeAllPorts(boolean exposeAllPorts) {
-		this.exposeAllPorts = exposeAllPorts;
 	}
 
 	public List<String> getCommand() {

@@ -7,7 +7,10 @@ import org.testng.TestListenerAdapter;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class DockerTestNgListener extends TestListenerAdapter {
 
@@ -49,12 +52,11 @@ public class DockerTestNgListener extends TestListenerAdapter {
 
 	private String runContainer(Container annotation) throws IOException, InterruptedException {
 		ContainerExecution execution = new ContainerExecution(annotation.image(), annotation.command());
-		List<Integer> ports = new ArrayList<>();
+		Set<Integer> ports = new HashSet<>();
 		for (int i : annotation.exposePorts()) {
 			ports.add(i);
 		}
 		execution.setExposePorts(ports);
-		execution.setExposeAllPorts(annotation.exposeAllPorts());
 		execution.setRemoveAfterCompletion(annotation.removeAfterCompletion());
 		for (String value : annotation.environment()) {
 			String[] parts = value.split("=", 2);

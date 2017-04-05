@@ -17,8 +17,6 @@ public @interface Container {
 
 	int[] exposePorts() default {};
 
-	boolean exposeAllPorts() default false;
-
 	String[] environment() default {};
 
 	boolean removeAfterCompletion() default true;

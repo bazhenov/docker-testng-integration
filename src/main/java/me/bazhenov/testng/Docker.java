@@ -12,7 +12,10 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static java.lang.Integer.parseInt;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.currentThread;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -58,9 +61,7 @@ public final class Docker implements Closeable {
 		if (additionalOpts.length > 0) {
 			cmd.addAll(asList(additionalOpts));
 		}
-		if (execution.isExposeAllPorts()) {
-			cmd.add("-P");
-		} else if (!execution.getExposePorts().isEmpty()) {
+		if (!execution.getExposePorts().isEmpty()) {
 			for (Integer port : execution.getExposePorts()) {
 				cmd.add("-p");
 				cmd.add(port.toString());
@@ -99,7 +100,31 @@ public final class Docker implements Closeable {
 		if (execution.isRemoveAfterCompletion())
 			containersToRemove.add(id);
 		checkContainerState(id, "running");
+
+		Set<Integer> exposePorts = execution.getExposePorts();
+		if (!exposePorts.isEmpty())
+			waitForPorts(id, exposePorts);
+
 		return id;
+	}
+
+	private void waitForPorts(String containerId, Set<Integer> ports) throws IOException, InterruptedException {
+		Thread self = currentThread();
+		long start = currentTimeMillis();
+		boolean reported = false;
+		while (!self.isInterrupted()) {
+			String output = doExecuteAndGetOutput(asList(pathToDocker, "exec", containerId, "cat", "/proc/self/net/tcp"));
+			Set<Integer> openPorts = readListenPorts(output);
+			if (openPorts.containsAll(ports))
+				return;
+
+			if (!reported && currentTimeMillis() - start > 5000) {
+				reported = true;
+				log.warn("Waiting for ports {} to open in container {}", ports, containerId);
+			}
+
+			MILLISECONDS.sleep(200);
+		}
 	}
 
 	private void checkContainerState(String id, String expectedState) throws IOException, InterruptedException {
@@ -120,14 +145,16 @@ public final class Docker implements Closeable {
 
 	@Override
 	public void close() throws IOException {
-		try {
-			List<String> cmd = new ArrayList<>(asList(pathToDocker, "rm", "-f"));
-			cmd.addAll(containersToRemove);
-			doExecuteAndGetOutput(cmd);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		} catch (InterruptedException e) {
-			Thread.interrupted();
+		if (!containersToRemove.isEmpty()) {
+			try {
+				List<String> cmd = new ArrayList<>(asList(pathToDocker, "rm", "-f"));
+				cmd.addAll(containersToRemove);
+				doExecuteAndGetOutput(cmd);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			} catch (InterruptedException e) {
+				Thread.interrupted();
+			}
 		}
 	}
 
@@ -149,5 +176,22 @@ public final class Docker implements Closeable {
 		}
 
 		return pts;
+	}
+
+	public static Set<Integer> readListenPorts(String output) {
+		Scanner scanner = new Scanner(output);
+		scanner.useRadix(16).useDelimiter("[\\s:]+");
+		Set<Integer> result = new HashSet<>();
+		if (scanner.hasNextLine())
+			scanner.nextLine();
+
+		while (scanner.hasNextLine()) {
+			scanner.nextInt();
+			scanner.nextInt();
+			int localPort = scanner.nextInt();
+			result.add(localPort);
+			scanner.nextLine();
+		}
+		return result;
 	}
 }

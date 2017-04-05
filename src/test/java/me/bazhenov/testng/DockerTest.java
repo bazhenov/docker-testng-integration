@@ -2,6 +2,8 @@ package me.bazhenov.testng;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -9,9 +11,11 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
-import static java.util.Collections.singletonList;
+import static java.util.Collections.singleton;
+import static me.bazhenov.testng.Docker.readListenPorts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
@@ -50,8 +54,8 @@ public class DockerTest {
 
 	@Test
 	public void executeDaemonizedContainer() throws IOException, InterruptedException {
-		ContainerExecution execution = new ContainerExecution("alpine", "nc", "-l", "1234");
-		execution.setExposePorts(singletonList(1234));
+		ContainerExecution execution = new ContainerExecution("alpine", "nc", "-lp", "1234", "-s", "0.0.0.0");
+		execution.setExposePorts(singleton(1234));
 
 		String containerName = docker.start(execution);
 		Map<Integer, Integer> ports = docker.getPublishedTcpPorts(containerName);
@@ -65,5 +69,15 @@ public class DockerTest {
 		JsonNode root = jsonReader.readTree(json);
 		Map<Integer, Integer> ports = Docker.doGetPublishedPorts(root);
 		assertThat(ports, hasEntry(8888, 1500));
+	}
+
+	@Test
+	public void ensureProcNetCouldBeRead() {
+		String example = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n" +
+			"   0: 00000000:04D2 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 15662 1 ffff8800baf1c780 100 0 0 10 0\n" +
+			"   1: 00000000:04D3 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 15662 1 ffff8800baf1c780 100 0 0 10 0";
+
+		Set<Integer> listenPorts = readListenPorts(example);
+		assertThat(listenPorts, hasItems(1234, 1235));
 	}
 }
