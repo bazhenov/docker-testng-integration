@@ -12,7 +12,7 @@ public class ContainerExecution {
 	private final List<String> command;
 	private Set<Integer> exposePorts = new HashSet<>();
 	private Map<String, String> environment = new HashMap<>();
-	private boolean removeAfterCompletion;
+	private boolean removeAfterCompletion = true;
 
 	public ContainerExecution(String image, String... command) {
 		this.image = requireNonNull(image);

@@ -5,16 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.util.*;
 
+import static java.io.File.createTempFile;
 import static java.lang.Integer.parseInt;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.currentThread;
+import static java.nio.file.Files.readAllLines;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -23,29 +24,66 @@ import static org.slf4j.LoggerFactory.getLogger;
 public final class Docker implements Closeable {
 
 	private static final Logger log = getLogger(Docker.class);
+	private static final ObjectMapper jsonReader = new ObjectMapper();
 
-	private final String pathToDocker = "docker";
+	private final String pathToDocker;
 	private final Set<String> containersToRemove = new HashSet<>();
-	private ObjectMapper jsonReader = new ObjectMapper();
+
+	public Docker(String pathToDocker) {
+		this.pathToDocker = requireNonNull(pathToDocker);
+	}
+
+	public Docker() {
+		this("docker");
+	}
 
 	public String executeAndReturnOutput(ContainerExecution execution) throws IOException, InterruptedException {
-		List<String> cmd = prepareDockerCommand(execution, "--rm", "-l", "testng");
+		List<String> cmd = prepareDockerCommand(execution);
 		return doExecuteAndGetFullOutput(cmd);
 	}
 
 	public String start(ContainerExecution execution) throws IOException, InterruptedException {
-		List<String> cmd = prepareDockerCommand(execution, "-d", "-l", "testng");
+		ensureImageAvailable(execution.getImage());
+		File cidFile = createTempFile("docker", "cid");
+		cidFile.deleteOnExit();
+		// Docker requires cid-file to be not present at the moment of starting a container
+		if (!cidFile.delete()) {
+			throw new IllegalStateException();
+		}
 
-		String id = doExecuteAndGetFullOutput(cmd).trim();
+		List<String> cmd = prepareDockerCommand(execution, "--cidfile", cidFile.getAbsolutePath());
+
+		Process process = runProcess(cmd);
+		String cid = waitForCid(process, cidFile);
+
 		if (execution.isRemoveAfterCompletion())
-			containersToRemove.add(id);
-		checkContainerState(id, "running");
+			containersToRemove.add(cid);
+		checkContainerState(cid, "running");
 
 		Set<Integer> exposePorts = execution.getExposePorts();
 		if (!exposePorts.isEmpty())
-			waitForPorts(id, exposePorts);
+			waitForPorts(cid, exposePorts);
 
-		return id;
+		return cid;
+	}
+
+	private void ensureImageAvailable(String image) throws IOException, InterruptedException {
+		Process process = doExecute(asList(pathToDocker, "image", "inspect", image), new HashSet<>(asList(0, 1)));
+		if (process.exitValue() == 1) {
+			log.warn("Image {} is not found locally. It will take some time to download it.", image);
+		}
+	}
+
+	private String waitForCid(Process process, File cidFile) throws InterruptedException, IOException {
+		do {
+			if (cidFile.isFile() && cidFile.length() > 0) {
+				return readAllLines(cidFile.toPath()).get(0);
+			} else if (!process.isAlive() && process.exitValue() != 0) {
+				throw new IllegalStateException("Unable to start Docker container.\n" +
+					"Exit code: " + process.exitValue() + "\n" +
+					"Stderr: " + readFully(process.getErrorStream()));
+			}
+		} while (true);
 	}
 
 	private static String doExecuteAndGetFullOutput(List<String> cmd) throws IOException, InterruptedException {
@@ -53,12 +91,19 @@ public final class Docker implements Closeable {
 	}
 
 	private static Process doExecute(List<String> cmd) throws IOException, InterruptedException {
+		return doExecute(cmd, singleton(0));
+	}
+
+	private static Process doExecute(List<String> cmd, Set<Integer> expectedExitCodes)
+		throws IOException, InterruptedException {
+
 		Process process = runProcess(cmd);
 
-		int statusCode = process.waitFor();
-		if (statusCode != 0) {
-			throw new IOException("Process finished with exit code " + statusCode
-				+ ". Output: " + readFully(process.getErrorStream()));
+		int exitCode = process.waitFor();
+		if (!expectedExitCodes.contains(exitCode)) {
+			throw new IOException("Unable to execute: " + String.join(" ", cmd) + "\n" +
+				"Exit code: " + exitCode + "\n" +
+				"Stderr: " + readFully(process.getErrorStream()));
 		}
 
 		return process;
@@ -75,15 +120,19 @@ public final class Docker implements Closeable {
 	private List<String> prepareDockerCommand(ContainerExecution execution, String... additionalOpts) {
 		List<String> cmd = new ArrayList<>();
 		cmd.add(pathToDocker);
+
 		cmd.add("run");
+
+		cmd.add("-l");
+		cmd.add("testng");
+
 		if (additionalOpts.length > 0) {
 			cmd.addAll(asList(additionalOpts));
 		}
-		if (!execution.getExposePorts().isEmpty()) {
-			for (Integer port : execution.getExposePorts()) {
-				cmd.add("-p");
-				cmd.add(port.toString());
-			}
+
+		for (Integer port : execution.getExposePorts()) {
+			cmd.add("-p");
+			cmd.add(port.toString());
 		}
 
 		for (Map.Entry<String, String> i : execution.getEnvironment().entrySet()) {
@@ -110,6 +159,14 @@ public final class Docker implements Closeable {
 		return scanner.next();
 	}
 
+	/**
+	 * Waits for given ports to be open in a container.
+	 * <p>
+	 * Only TCP ports are monitored at the moment using /proc/self/net/tcp
+	 *
+	 * @param containerId container to monitor
+	 * @param ports       ports to wait for
+	 */
 	private void waitForPorts(String containerId, Set<Integer> ports) throws IOException, InterruptedException {
 		Thread self = currentThread();
 		long start = currentTimeMillis();

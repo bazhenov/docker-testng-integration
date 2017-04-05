@@ -4,7 +4,7 @@
 
 This library allows you to run Docker containers before your test suite.
 
-## Using
+## Usage
 
 Include dependency in your `pom.xml`
 
@@ -15,7 +15,7 @@ Include dependency in your `pom.xml`
 		<scope>test</scope>
 	</dependency>
 
-Then in your test use call-level annotation `@Container`
+Then in your test use call-level annotation `@Container` (you can provide several annotations)
 
 	@Container(name = "my-container", image = "mysql", exposePorts = 3306,
 		environment = {"MYSQL_ROOT_PASSWORD=secret"}
@@ -23,7 +23,7 @@ Then in your test use call-level annotation `@Container`
 
 		private int mysqlPort
 
-		@BeforeMethod
+		@BeforeClass
 		@Parameters({"docker://my-container:3306"})
 		public void setUp(int port) {
 			mysqlPort = port;
@@ -31,11 +31,12 @@ Then in your test use call-level annotation `@Container`
 
 		@Test
 		public void myTest() {
-			String jdbcUrl = "jdbc:mysql://localhost" + mysqlPort + "/db";
+			String jdbcUrl = "jdbc:mysql://localhost:" + mysqlPort + "/db";
 		}
 	}
 
-Then you should add following TestNG listener to your test suite `me.bazhenov.testng.DockerTestNgListener`. If you are using Maven, just add following config to your `pom.xml`:
+Then you should add following TestNG listener to your test suite `me.bazhenov.testng.DockerTestNgListener`. If you are
+using Maven, just add following config to your `pom.xml`:
 
 	<build>
 		<plugins>
@@ -53,6 +54,13 @@ Then you should add following TestNG listener to your test suite `me.bazhenov.te
 			</plugin>
 		</plugins>
 	</build>
+
+## Features
+
+* using `docker` command line utility;
+* provides an easy way of getting dynamically allocated ports in tests;
+* mark all containers with `testng` label, so they could be easily found with `docker ps -af label=testng` command;
+* waits for given ports to be open in a container, so containerized service is up at the moment of test starts;
 
 ## Limitations
 
