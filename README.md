@@ -8,52 +8,52 @@ This library allows you to run Docker containers before your test suite.
 
 Include dependency in your `pom.xml`
 
-  <dependency>
-    <groupId>me.bazhenov</groupId>
-    <artifactId>docker-testng-integration</artifactId>
-    <version>1.0</version>
-    <scope>test</scope>
-  </dependency>
+    <dependency>
+      <groupId>me.bazhenov</groupId>
+      <artifactId>docker-testng-integration</artifactId>
+      <version>1.0</version>
+      <scope>test</scope>
+    </dependency>
 
 Then in your test use call-level annotation `@Container` (you can provide several annotations)
 
-  @Container(name = "my-container", image = "mysql", exposePorts = 3306,
-    environment = {"MYSQL_ROOT_PASSWORD=secret"}
-  public class MySqlIT {
+    @Container(name = "my-container", image = "mysql", exposePorts = 3306,
+      environment = {"MYSQL_ROOT_PASSWORD=secret"}
+    public class MySqlIT {
 
-    private int mysqlPort
+      private int mysqlPort
 
-    @BeforeClass
-    @Parameters({"docker://my-container:3306"})
-    public void setUp(int port) {
-      mysqlPort = port;
+      @BeforeClass
+      @Parameters({"docker://my-container:3306"})
+      public void setUp(int port) {
+        mysqlPort = port;
+      }
+
+      @Test
+      public void myTest() {
+        String jdbcUrl = "jdbc:mysql://localhost:" + mysqlPort + "/db";
+      }
     }
-
-    @Test
-    public void myTest() {
-      String jdbcUrl = "jdbc:mysql://localhost:" + mysqlPort + "/db";
-    }
-  }
 
 Then you should add following TestNG listener to your test suite `me.bazhenov.testng.DockerTestNgListener`. If you are
 using Maven, just add following config to your `pom.xml`:
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <properties>
-            <property>
-              <name>listener</name>
-              <value>me.bazhenov.testng.DockerTestNgListener</value>
-            </property>
-          </properties>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <properties>
+              <property>
+                <name>listener</name>
+                <value>me.bazhenov.testng.DockerTestNgListener</value>
+              </property>
+            </properties>
+          </configuration>
+        </plugin>
+      </plugins>
+    </build>
 
 ## Features
 
