@@ -36,7 +36,7 @@ public class DockerTestNgListener extends TestListenerAdapter {
 					for (Map.Entry<Integer, Integer> port : publishedTcpPorts.entrySet()) {
 						int containerPort = port.getKey();
 						int hostPort = port.getValue();
-						String paramKey = String.format("docker://%s:%d", annotation.name(), containerPort);
+						String paramKey = String.format("%s:%d", annotation.name(), containerPort);
 						params.put(paramKey, Integer.toString(hostPort));
 					}
 				}
@@ -51,14 +51,14 @@ public class DockerTestNgListener extends TestListenerAdapter {
 	}
 
 	private String runContainer(Container annotation) throws IOException, InterruptedException {
-		ContainerExecution execution = new ContainerExecution(annotation.image(), annotation.command());
+		ContainerDefinition execution = new ContainerDefinition(annotation.image(), annotation.command());
 		fillExposePorts(annotation, execution);
 		fillEnvironmentVariables(annotation, execution);
 		execution.setRemoveAfterCompletion(annotation.removeAfterCompletion());
 		return docker.start(execution);
 	}
 
-	private static void fillExposePorts(Container annotation, ContainerExecution execution) {
+	private static void fillExposePorts(Container annotation, ContainerDefinition execution) {
 		Set<Integer> ports = new HashSet<>();
 		for (int i : annotation.exposePorts()) {
 			ports.add(i);
@@ -66,7 +66,7 @@ public class DockerTestNgListener extends TestListenerAdapter {
 		execution.setExposePorts(ports);
 	}
 
-	private static void fillEnvironmentVariables(Container annotation, ContainerExecution execution) {
+	private static void fillEnvironmentVariables(Container annotation, ContainerDefinition execution) {
 		for (String value : annotation.environment()) {
 			String[] parts = value.split("=", 2);
 			execution.addEnvironment(parts[0], parts[1]);

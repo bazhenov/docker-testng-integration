@@ -2,8 +2,6 @@ package me.bazhenov.testng;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -37,7 +35,7 @@ public class DockerTest {
 
 	@Test
 	public void runSimpleContainer() throws IOException, InterruptedException, ParseException {
-		ContainerExecution execution = new ContainerExecution("alpine", "date");
+		ContainerDefinition execution = new ContainerDefinition("alpine", "date");
 
 		String output = docker.executeAndReturnOutput(execution).trim();
 		assertThat(unixDatePattern.matcher(output).matches(), is(true));
@@ -45,7 +43,7 @@ public class DockerTest {
 
 	@Test
 	public void runWithEnvVariables() throws IOException, InterruptedException, ParseException {
-		ContainerExecution execution = new ContainerExecution("alpine", "sh", "-c", "echo $VAR");
+		ContainerDefinition execution = new ContainerDefinition("alpine", "sh", "-c", "echo $VAR");
 		execution.addEnvironment("VAR", "value");
 
 		String output = docker.executeAndReturnOutput(execution).trim();
@@ -54,7 +52,7 @@ public class DockerTest {
 
 	@Test
 	public void executeDaemonizedContainer() throws IOException, InterruptedException {
-		ContainerExecution execution = new ContainerExecution("alpine", "nc", "-lp", "1234", "-s", "0.0.0.0");
+		ContainerDefinition execution = new ContainerDefinition("alpine", "nc", "-lp", "1234", "-s", "0.0.0.0");
 		execution.setExposePorts(singleton(1234));
 
 		String containerName = docker.start(execution);

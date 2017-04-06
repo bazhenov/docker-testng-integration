@@ -20,14 +20,14 @@ Include dependency in your `pom.xml`
 Then in your test use call-level annotation `@Container` (you can provide several annotations)
 
 ```java
-@Container(name = "my-container", image = "mysql", exposePorts = 3306,
-	environment = {"MYSQL_ROOT_PASSWORD=secret"}
+@Container(name = "my-container", image = "mysql", exposePorts = 3306, environment =
+	{"MYSQL_ROOT_PASSWORD=secret"})
 public class MySqlIT {
 
 	private int mysqlPort
 
 	@BeforeClass
-	@Parameters({"docker://my-container:3306"})
+	@Parameters({"my-container:3306"})
 	public void setUp(int port) {
 		mysqlPort = port;
 	}
@@ -35,6 +35,7 @@ public class MySqlIT {
 	@Test
 	public void myTest() {
 		String jdbcUrl = "jdbc:mysql://localhost:" + mysqlPort + "/db";
+		// Using this URL to connect to MySQL
 	}
 }
 ```

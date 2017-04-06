@@ -6,15 +6,16 @@ import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 @SuppressWarnings("WeakerAccess")
-public class ContainerExecution {
+public class ContainerDefinition {
 
 	private final String image;
 	private final List<String> command;
 	private Set<Integer> exposePorts = new HashSet<>();
 	private Map<String, String> environment = new HashMap<>();
 	private boolean removeAfterCompletion = true;
+	private boolean waitForAllExpesedPortsToBeOpen = true;
 
-	public ContainerExecution(String image, String... command) {
+	public ContainerDefinition(String image, String... command) {
 		this.image = requireNonNull(image);
 		this.command = requireNonNull(asList(command));
 	}
@@ -29,6 +30,14 @@ public class ContainerExecution {
 
 	public void setExposePorts(Set<Integer> exposePorts) {
 		this.exposePorts = exposePorts;
+	}
+
+	public boolean isWaitForAllExpesedPortsToBeOpen() {
+		return waitForAllExpesedPortsToBeOpen;
+	}
+
+	public void setWaitForAllExpesedPortsToBeOpen(boolean waitForAllExpesedPortsToBeOpen) {
+		this.waitForAllExpesedPortsToBeOpen = waitForAllExpesedPortsToBeOpen;
 	}
 
 	public List<String> getCommand() {

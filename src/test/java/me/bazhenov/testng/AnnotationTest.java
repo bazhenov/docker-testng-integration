@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.greaterThan;
 public class AnnotationTest {
 
 	@Test
-	@Parameters({"docker://nc1:1234", "docker://nc2:1234"})
+	@Parameters({"nc1:1234", "nc2:1234"})
 	public void foo(int hostPort1, int hostPort2) throws IOException {
 		assertThat(hostPort1, greaterThan(1024));
 		assertThat(hostPort2, greaterThan(1024));
