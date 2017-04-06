@@ -13,7 +13,8 @@ public class ContainerDefinition {
 	private Set<Integer> exposePorts = new HashSet<>();
 	private Map<String, String> environment = new HashMap<>();
 	private boolean removeAfterCompletion = true;
-	private boolean waitForAllExpesedPortsToBeOpen = true;
+	private boolean waitForAllExposedPortsToBeOpen = true;
+	private String workingDirectory;
 
 	public ContainerDefinition(String image, String... command) {
 		this.image = requireNonNull(image);
@@ -32,12 +33,12 @@ public class ContainerDefinition {
 		this.exposePorts = exposePorts;
 	}
 
-	public boolean isWaitForAllExpesedPortsToBeOpen() {
-		return waitForAllExpesedPortsToBeOpen;
+	public boolean isWaitForAllExposedPortsToBeOpen() {
+		return waitForAllExposedPortsToBeOpen;
 	}
 
-	public void setWaitForAllExpesedPortsToBeOpen(boolean waitForAllExpesedPortsToBeOpen) {
-		this.waitForAllExpesedPortsToBeOpen = waitForAllExpesedPortsToBeOpen;
+	public void setWaitForAllExposedPortsToBeOpen(boolean waitForAllExposedPortsToBeOpen) {
+		this.waitForAllExposedPortsToBeOpen = waitForAllExposedPortsToBeOpen;
 	}
 
 	public List<String> getCommand() {
@@ -58,5 +59,13 @@ public class ContainerDefinition {
 
 	public boolean isRemoveAfterCompletion() {
 		return removeAfterCompletion;
+	}
+
+	public void setWorkingDirectory(String workingDirectory) {
+		this.workingDirectory = workingDirectory;
+	}
+
+	public String getWorkingDirectory() {
+		return workingDirectory;
 	}
 }

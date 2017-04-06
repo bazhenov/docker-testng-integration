@@ -20,4 +20,6 @@ public @interface Container {
 	String[] environment() default {};
 
 	boolean removeAfterCompletion() default true;
+
+	String workingDir() default "";
 }

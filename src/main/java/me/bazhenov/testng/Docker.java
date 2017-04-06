@@ -98,7 +98,7 @@ public final class Docker implements Closeable {
 	}
 
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
-		return !definition.getExposePorts().isEmpty() && definition.isWaitForAllExpesedPortsToBeOpen();
+		return !definition.getExposePorts().isEmpty() && definition.isWaitForAllExposedPortsToBeOpen();
 	}
 
 	private void ensureImageAvailable(String image) throws IOException, InterruptedException {
@@ -151,7 +151,7 @@ public final class Docker implements Closeable {
 		return builder.start();
 	}
 
-	private List<String> prepareDockerCommand(ContainerDefinition execution, String... additionalOpts) {
+	private List<String> prepareDockerCommand(ContainerDefinition def, String... additionalOpts) {
 		List<String> cmd = new ArrayList<>();
 		cmd.add(pathToDocker);
 
@@ -164,21 +164,26 @@ public final class Docker implements Closeable {
 			cmd.addAll(asList(additionalOpts));
 		}
 
-		for (Integer port : execution.getExposePorts()) {
+		for (Integer port : def.getExposePorts()) {
 			cmd.add("-p");
 			cmd.add(port.toString());
 		}
 
-		for (Map.Entry<String, String> i : execution.getEnvironment().entrySet()) {
+		for (Map.Entry<String, String> i : def.getEnvironment().entrySet()) {
 			cmd.add("-e");
 			cmd.add(i.getKey() + "=" + i.getValue());
 		}
 
-		if (execution.isRemoveAfterCompletion())
+		if (def.isRemoveAfterCompletion())
 			cmd.add("--rm");
 
-		cmd.add(execution.getImage());
-		cmd.addAll(execution.getCommand());
+		if (def.getWorkingDirectory() != null) {
+			cmd.add("-w");
+			cmd.add(def.getWorkingDirectory());
+		}
+
+		cmd.add(def.getImage());
+		cmd.addAll(def.getCommand());
 		return cmd;
 	}
 

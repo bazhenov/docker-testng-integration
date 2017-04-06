@@ -31,14 +31,10 @@ public class DockerTestNgListener extends TestListenerAdapter {
 			for (Class c : testClasses) {
 				Container[] annotations = (Container[]) c.getDeclaredAnnotationsByType(Container.class);
 				for (Container annotation : annotations) {
-					String containerId = runContainer(annotation);
-					Map<Integer, Integer> publishedTcpPorts = docker.getPublishedTcpPorts(containerId);
-					for (Map.Entry<Integer, Integer> port : publishedTcpPorts.entrySet()) {
-						int containerPort = port.getKey();
-						int hostPort = port.getValue();
-						String paramKey = String.format("%s:%d", annotation.name(), containerPort);
-						params.put(paramKey, Integer.toString(hostPort));
-					}
+					ContainerDefinition def = createContainerDefinitionFromAnnotation(annotation);
+					String containerId = docker.start(def);
+
+					params.putAll(retrievePortMappingParams(annotation, containerId));
 				}
 			}
 
@@ -50,12 +46,29 @@ public class DockerTestNgListener extends TestListenerAdapter {
 		}
 	}
 
-	private String runContainer(Container annotation) throws IOException, InterruptedException {
-		ContainerDefinition execution = new ContainerDefinition(annotation.image(), annotation.command());
-		fillExposePorts(annotation, execution);
-		fillEnvironmentVariables(annotation, execution);
-		execution.setRemoveAfterCompletion(annotation.removeAfterCompletion());
-		return docker.start(execution);
+	private Map<String, String> retrievePortMappingParams(Container annotation, String containerId)
+		throws IOException, InterruptedException {
+
+		Map<String, String> params = new HashMap<>();
+		Map<Integer, Integer> publishedTcpPorts = docker.getPublishedTcpPorts(containerId);
+		for (Map.Entry<Integer, Integer> port : publishedTcpPorts.entrySet()) {
+			int containerPort = port.getKey();
+			int hostPort = port.getValue();
+			String paramKey = String.format("%s:%d", annotation.name(), containerPort);
+			params.put(paramKey, Integer.toString(hostPort));
+		}
+		return params;
+	}
+
+	private static ContainerDefinition createContainerDefinitionFromAnnotation(Container annotation) {
+		ContainerDefinition def = new ContainerDefinition(annotation.image(), annotation.command());
+		fillExposePorts(annotation, def);
+		fillEnvironmentVariables(annotation, def);
+		def.setRemoveAfterCompletion(annotation.removeAfterCompletion());
+		if (!annotation.workingDir().isEmpty()) {
+			def.setWorkingDirectory(annotation.workingDir());
+		}
+		return def;
 	}
 
 	private static void fillExposePorts(Container annotation, ContainerDefinition execution) {

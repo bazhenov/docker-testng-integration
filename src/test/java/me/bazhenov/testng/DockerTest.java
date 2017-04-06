@@ -51,13 +51,22 @@ public class DockerTest {
 	}
 
 	@Test
-	public void executeDaemonizedContainer() throws IOException, InterruptedException {
+	public void executeDemonizedContainer() throws IOException, InterruptedException {
 		ContainerDefinition execution = new ContainerDefinition("alpine", "nc", "-lp", "1234", "-s", "0.0.0.0");
 		execution.setExposePorts(singleton(1234));
 
 		String containerName = docker.start(execution);
 		Map<Integer, Integer> ports = docker.getPublishedTcpPorts(containerName);
 		assertThat(ports, hasKey(1234));
+	}
+
+	@Test
+	public void customizingWorkingDirectory() throws IOException, InterruptedException {
+		ContainerDefinition def = new ContainerDefinition("alpine", "./echo", "-n", "hello");
+		def.setWorkingDirectory("/bin");
+
+		String output = docker.executeAndReturnOutput(def);
+		assertThat(output, is("hello"));
 	}
 
 	@Test
