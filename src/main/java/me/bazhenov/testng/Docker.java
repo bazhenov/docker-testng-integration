@@ -12,6 +12,7 @@ import static java.io.File.createTempFile;
 import static java.lang.Integer.parseInt;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.currentThread;
+import static java.lang.Thread.sleep;
 import static java.nio.file.Files.readAllLines;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -85,16 +86,21 @@ public final class Docker implements Closeable {
 		List<String> cmd = prepareDockerCommand(definition, "--cidfile", cidFile.getAbsolutePath());
 
 		Process process = runProcess(cmd);
-		String cid = waitForCid(process, cidFile);
+		try {
+			String cid = waitForCid(process, cidFile);
 
-		if (definition.isRemoveAfterCompletion())
-			containersToRemove.add(cid);
-		checkContainerState(cid, "running");
+			if (definition.isRemoveAfterCompletion())
+				containersToRemove.add(cid);
+			checkContainerState(cid, "running");
 
-		if (shouldWaitForOpenPorts(definition))
-			waitForPorts(cid, definition.getExposePorts());
+			if (shouldWaitForOpenPorts(definition))
+				waitForPorts(cid, definition.getExposePorts());
 
-		return cid;
+			return cid;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Unable to start container\n" +
+				"Container stderr: " + readFully(process.getErrorStream()), e);
+		}
 	}
 
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
@@ -117,6 +123,7 @@ public final class Docker implements Closeable {
 					"Exit code: " + process.exitValue() + "\n" +
 					"Stderr: " + readFully(process.getErrorStream()));
 			}
+			sleep(100);
 		} while (true);
 	}
 
@@ -137,7 +144,8 @@ public final class Docker implements Closeable {
 		if (!expectedExitCodes.contains(exitCode)) {
 			throw new IOException("Unable to execute: " + String.join(" ", cmd) + "\n" +
 				"Exit code: " + exitCode + "\n" +
-				"Stderr: " + readFully(process.getErrorStream()));
+				"Stderr: " + readFully(process.getErrorStream()) + "\n" +
+				"Stdout: " + readFully(process.getInputStream()));
 		}
 
 		return process;
@@ -195,7 +203,9 @@ public final class Docker implements Closeable {
 
 	static String readFully(InputStream stream) {
 		Scanner scanner = new Scanner(stream).useDelimiter("\\A");
-		return scanner.next();
+		return scanner.hasNext()
+			? scanner.next()
+			: "";
 	}
 
 	/**
@@ -203,22 +213,24 @@ public final class Docker implements Closeable {
 	 * <p>
 	 * Only TCP ports are monitored at the moment using /proc/self/net/tcp
 	 *
-	 * @param containerId container to monitor
-	 * @param ports       ports to wait for
+	 * @param cid   container to monitor
+	 * @param ports ports to wait for
 	 */
-	private void waitForPorts(String containerId, Set<Integer> ports) throws IOException, InterruptedException {
+	private void waitForPorts(String cid, Set<Integer> ports) throws IOException, InterruptedException {
 		Thread self = currentThread();
 		long start = currentTimeMillis();
 		boolean reported = false;
 		while (!self.isInterrupted()) {
-			String output = docker("exec", containerId, "cat", "/proc/self/net/tcp");
+			String output = docker("exec", cid, "cat", "/proc/self/net/tcp");
 			Set<Integer> openPorts = readListenPorts(output);
 			if (openPorts.containsAll(ports))
 				return;
 
+			checkContainerState(cid, "running");
+
 			if (!reported && currentTimeMillis() - start > 5000) {
 				reported = true;
-				log.warn("Waiting for ports {} to open in container {}", ports, containerId);
+				log.warn("Waiting for ports {} to open in container {}", ports, cid);
 			}
 
 			MILLISECONDS.sleep(200);
