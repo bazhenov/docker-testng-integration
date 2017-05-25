@@ -41,8 +41,9 @@ public class DockerTestNgListener extends TestListenerAdapter {
 			testContext.getSuite().getXmlSuite().setParameters(params);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
+
 		} catch (InterruptedException e) {
-			Thread.interrupted();
+			Thread.currentThread().interrupt();
 		}
 	}
 
