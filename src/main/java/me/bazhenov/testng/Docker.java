@@ -80,7 +80,7 @@ public final class Docker implements Closeable {
 		cidFile.deleteOnExit();
 		// Docker requires cid-file to be not present at the moment of starting a container
 		if (!cidFile.delete()) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Docker requires cid-file to be not present at the moment of starting a container");
 		}
 
 		List<String> cmd = prepareDockerCommand(definition, "--cidfile", cidFile.getAbsolutePath());
@@ -177,6 +177,12 @@ public final class Docker implements Closeable {
 			cmd.add(port.toString());
 		}
 
+		// Mounting internal volumes
+		for (String mountPoint : def.getMountPoints()) {
+			cmd.add("-v");
+			cmd.add(mountPoint);
+		}
+
 		for (Map.Entry<String, String> i : def.getEnvironment().entrySet()) {
 			cmd.add("-e");
 			cmd.add(i.getKey() + "=" + i.getValue());
@@ -265,9 +271,10 @@ public final class Docker implements Closeable {
 	public void close() throws IOException {
 		if (!containersToRemove.isEmpty()) {
 			try {
-				List<String> cmd = new ArrayList<>(asList(pathToDocker, "rm", "-f"));
+				List<String> cmd = new ArrayList<>(asList(pathToDocker, "rm", "-f", "-v"));
 				cmd.addAll(containersToRemove);
 				doExecute(cmd);
+				containersToRemove.clear();
 
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
@@ -313,5 +320,22 @@ public final class Docker implements Closeable {
 			scanner.nextLine();
 		}
 		return result;
+	}
+
+
+	/**
+	 * Used for testing purposes only
+	 *
+	 * @return the number of volumes registered in docker
+	 */
+	int getVolumesCount() throws IOException, InterruptedException {
+		List<String> cmd = new ArrayList<>();
+		cmd.add(pathToDocker);
+		cmd.add("volume");
+		cmd.add("ls");
+		cmd.add("-q");
+		String out = doExecuteAndGetFullOutput(cmd);
+		String[] parts = out.trim().split("\n");
+		return parts.length;
 	}
 }

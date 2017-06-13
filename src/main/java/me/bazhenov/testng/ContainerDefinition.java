@@ -15,6 +15,7 @@ public class ContainerDefinition {
 	private boolean removeAfterCompletion = true;
 	private boolean waitForAllExposedPortsToBeOpen = true;
 	private String workingDirectory;
+	private List<String> mountPoints = new ArrayList<>();
 
 	public ContainerDefinition(String image, String... command) {
 		this.image = requireNonNull(image);
@@ -67,5 +68,16 @@ public class ContainerDefinition {
 
 	public String getWorkingDirectory() {
 		return workingDirectory;
+	}
+
+	public void addVolume(String mountPoint) {
+		if (mountPoint == null || mountPoint.isEmpty()) {
+			throw new IllegalArgumentException();
+		}
+		mountPoints.add(mountPoint);
+	}
+
+	public List<String> getMountPoints() {
+		return mountPoints;
 	}
 }

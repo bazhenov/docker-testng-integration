@@ -70,6 +70,16 @@ public class DockerTest {
 	}
 
 	@Test
+	public void shouldCorrectlyRemoveUsedVolumes() throws IOException, InterruptedException {
+		int beforeCount = docker.getVolumesCount();
+		ContainerDefinition def = new ContainerDefinition("alpine", "sh", "-c", "date > /opt/hello; sleep 5");
+		def.addVolume("/opt");
+		docker.start(def);
+		docker.close();
+		assertThat(docker.getVolumesCount(), is(beforeCount));
+	}
+
+	@Test
 	public void parseJson() throws IOException {
 		String json = Docker.readFully(getClass().getResourceAsStream("/inspect-example.json"));
 		ObjectMapper jsonReader = new ObjectMapper();
