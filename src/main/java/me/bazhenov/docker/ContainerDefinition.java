@@ -1,4 +1,4 @@
-package me.bazhenov.testng;
+package me.bazhenov.docker;
 
 import java.util.*;
 
@@ -6,7 +6,7 @@ import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
 @SuppressWarnings("WeakerAccess")
-public class ContainerDefinition {
+public final class ContainerDefinition {
 
 	private final String image;
 	private final List<String> command;
@@ -79,5 +79,26 @@ public class ContainerDefinition {
 
 	public List<String> getMountPoints() {
 		return mountPoints;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ContainerDefinition that = (ContainerDefinition) o;
+		return removeAfterCompletion == that.removeAfterCompletion &&
+			waitForAllExposedPortsToBeOpen == that.waitForAllExposedPortsToBeOpen &&
+			Objects.equals(image, that.image) &&
+			Objects.equals(command, that.command) &&
+			Objects.equals(exposePorts, that.exposePorts) &&
+			Objects.equals(environment, that.environment) &&
+			Objects.equals(workingDirectory, that.workingDirectory) &&
+			Objects.equals(mountPoints, that.mountPoints);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(image, command, exposePorts, environment, removeAfterCompletion, waitForAllExposedPortsToBeOpen,
+			workingDirectory, mountPoints);
 	}
 }

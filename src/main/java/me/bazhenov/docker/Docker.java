@@ -1,4 +1,4 @@
-package me.bazhenov.testng;
+package me.bazhenov.docker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -166,7 +166,7 @@ public final class Docker implements Closeable {
 		cmd.add("run");
 
 		cmd.add("-l");
-		cmd.add("testng");
+		cmd.add("docker");
 
 		if (additionalOpts.length > 0) {
 			cmd.addAll(asList(additionalOpts));
@@ -260,6 +260,10 @@ public final class Docker implements Closeable {
 		}
 	}
 
+	/**
+	 * @param containerName container name or id
+	 * @return Map where keys are container ports and values are host ports
+	 */
 	public Map<Integer, Integer> getPublishedTcpPorts(String containerName) throws IOException, InterruptedException {
 		String json = docker("inspect", containerName);
 		JsonNode root = jsonReader.readTree(json);

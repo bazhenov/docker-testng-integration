@@ -12,23 +12,24 @@ Include dependency in your `pom.xml`
 <dependency>
 	<groupId>me.bazhenov</groupId>
 	<artifactId>docker-testng-integration</artifactId>
-	<version>1.0.1</version>
+	<version>1.1</version>
 	<scope>test</scope>
 </dependency>
 ```
 
-Then in your test use call-level annotation `@Container` (you can provide several annotations)
+Then in your test use class-level annotation `@Container` (you can provide several annotations), as well as method-level
+annotation `@AfterContainerStart`. You alse need to register `me.bazhenov.docker.DockerTestNgListener`
 
 ```java
 @Container(name = "my-container", image = "mysql", exposePorts = 3306, environment =
 	{"MYSQL_ROOT_PASSWORD=secret"})
+@Listeners(DockerTestNgListener.class)
 public class MySqlIT {
 
 	private int mysqlPort
 
-	@BeforeClass
-	@Parameters({"my-container:3306"})
-	public void setUp(int port) {
+	@AfterContainerStart
+	public void setUp(@ContainerPort(name = "my-container", port = 3306) int port) {
 		mysqlPort = port;
 	}
 
@@ -40,7 +41,7 @@ public class MySqlIT {
 }
 ```
 
-Then you should add following TestNG listener to your test suite `me.bazhenov.testng.DockerTestNgListener`. If you are
+If you don't want to register listener on a test-case class you can add the listener to your test suite. If you are
 using Maven, just add following config to your `pom.xml`:
 
 ```xml
@@ -53,7 +54,7 @@ using Maven, just add following config to your `pom.xml`:
 				<properties>
 					<property>
 						<name>listener</name>
-						<value>me.bazhenov.testng.DockerTestNgListener</value>
+						<value>me.bazhenov.docker.DockerTestNgListener</value>
 					</property>
 				</properties>
 			</configuration>
@@ -62,12 +63,34 @@ using Maven, just add following config to your `pom.xml`:
 </build>
 ```
 
+By default all containers are local to the test case. So if you define two test cases with container named `mysql`, 2 mysql 
+instances will be started. One for each test case. But you can share containers between test cases, if you need to.
+
+```java
+@Container(image = "mysql:5.6", name = "mysql", exposePorts = {3306})
+class SharedContainers {}
+
+@ContainersFrom(SharedContainers.class)
+@Listeners(DockerTestNgListener.class)
+class MyTestCase {
+
+	@AfterContainerStart
+	public void dockerSetup(@ContainerPort(name = "mysql", port = 3306) int mysqlPort) {
+		...
+	}
+}
+```
+
+In this case container `mysql` will be started just once and shared between all test cases importing it using `@ContainersFrom`.
+
 ## Features
 
-* using `docker` command line utility;
+* library using `docker` command line utility;
 * provides an easy way of getting dynamically allocated ports in tests;
 * mark all containers with `testng` label, so they could be easily found with `docker ps -af label=testng` command;
 * waits for given ports to be open in a container, so containerized service is up at the moment of test starts;
+* library can share containers before several test cases using `@ContainersFrom` annotation. This allows to speed up test
+execution if you can reuse single container instead of starting a new container each time.
 
 ## Limitations
 

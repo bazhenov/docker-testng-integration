@@ -140,7 +140,7 @@
 					<properties>
 						<property>
 							<name>listener</name>
-							<value>me.bazhenov.testng.DockerTestNgListener</value>
+							<value>me.bazhenov.docker.DockerTestNgListener</value>
 						</property>
 					</properties>
 				</configuration>

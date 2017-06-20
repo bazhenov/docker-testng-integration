@@ -1,4 +1,4 @@
-package me.bazhenov.testng;
+package me.bazhenov.docker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static java.util.Collections.singleton;
-import static me.bazhenov.testng.Docker.readListenPorts;
+import static me.bazhenov.docker.Docker.readListenPorts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
