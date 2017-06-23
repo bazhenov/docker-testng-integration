@@ -10,10 +10,10 @@ Include dependency in your `pom.xml`
 
 ```xml
 <dependency>
-	<groupId>me.bazhenov</groupId>
-	<artifactId>docker-testng-integration</artifactId>
-	<version>1.1</version>
-	<scope>test</scope>
+  <groupId>me.bazhenov</groupId>
+  <artifactId>docker-testng-integration</artifactId>
+  <version>1.1</version>
+  <scope>test</scope>
 </dependency>
 ```
 
@@ -22,22 +22,22 @@ annotation `@AfterContainerStart`. You alse need to register `me.bazhenov.docker
 
 ```java
 @Container(name = "my-container", image = "mysql", exposePorts = 3306, environment =
-	{"MYSQL_ROOT_PASSWORD=secret"})
+  {"MYSQL_ROOT_PASSWORD=secret"})
 @Listeners(DockerTestNgListener.class)
 public class MySqlIT {
 
-	private int mysqlPort
+  private int mysqlPort
 
-	@AfterContainerStart
-	public void setUp(@ContainerPort(name = "my-container", port = 3306) int port) {
-		mysqlPort = port;
-	}
+  @AfterContainerStart
+  public void setUp(@ContainerPort(name = "my-container", port = 3306) int port) {
+    mysqlPort = port;
+  }
 
-	@Test
-	public void myTest() {
-		String jdbcUrl = "jdbc:mysql://localhost:" + mysqlPort + "/db";
-		// Using this URL to connect to MySQL
-	}
+  @Test
+  public void myTest() {
+    String jdbcUrl = "jdbc:mysql://localhost:" + mysqlPort + "/db";
+    // Using this URL to connect to MySQL
+  }
 }
 ```
 
@@ -46,20 +46,20 @@ using Maven, just add following config to your `pom.xml`:
 
 ```xml
 <build>
-	<plugins>
-		<plugin>
-			<groupId>org.apache.maven.plugins</groupId>
-			<artifactId>maven-surefire-plugin</artifactId>
-			<configuration>
-				<properties>
-					<property>
-						<name>listener</name>
-						<value>me.bazhenov.docker.DockerTestNgListener</value>
-					</property>
-				</properties>
-			</configuration>
-		</plugin>
-	</plugins>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-surefire-plugin</artifactId>
+      <configuration>
+        <properties>
+          <property>
+            <name>listener</name>
+            <value>me.bazhenov.docker.DockerTestNgListener</value>
+          </property>
+        </properties>
+      </configuration>
+    </plugin>
+  </plugins>
 </build>
 ```
 
@@ -74,10 +74,10 @@ class SharedContainers {}
 @Listeners(DockerTestNgListener.class)
 class MyTestCase {
 
-	@AfterContainerStart
-	public void dockerSetup(@ContainerPort(name = "mysql", port = 3306) int mysqlPort) {
-		...
-	}
+  @AfterContainerStart
+  public void dockerSetup(@ContainerPort(name = "mysql", port = 3306) int mysqlPort) {
+    ...
+  }
 }
 ```
 
