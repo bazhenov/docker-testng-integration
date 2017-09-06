@@ -19,6 +19,7 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -94,7 +95,7 @@ public final class Docker implements Closeable {
 			checkContainerState(cid, "running");
 
 			if (shouldWaitForOpenPorts(definition))
-				waitForPorts(cid, definition.getExposePorts());
+				waitForPorts(cid, parseContainerPorts(definition.getPublishedPortsDefinition()));
 
 			return cid;
 		} catch (IOException e) {
@@ -103,8 +104,14 @@ public final class Docker implements Closeable {
 		}
 	}
 
+	private static Set<Integer> parseContainerPorts(Set<String> publishedPortsDefinition) {
+		return publishedPortsDefinition.stream()
+			.map(d -> Integer.valueOf(d.substring(d.lastIndexOf(':') + 1)))
+			.collect(toSet());
+	}
+
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
-		return !definition.getExposePorts().isEmpty() && definition.isWaitForAllExposedPortsToBeOpen();
+		return !definition.getPublishedPortsDefinition().isEmpty() && definition.isWaitForAllExposedPortsToBeOpen();
 	}
 
 	private void ensureImageAvailable(String image) throws IOException, InterruptedException {
@@ -172,9 +179,9 @@ public final class Docker implements Closeable {
 			cmd.addAll(asList(additionalOpts));
 		}
 
-		for (Integer port : def.getExposePorts()) {
+		for (String port : def.getPublishedPortsDefinition()) {
 			cmd.add("-p");
-			cmd.add(port.toString());
+			cmd.add(port);
 		}
 
 		// Mounting internal volumes
@@ -195,6 +202,8 @@ public final class Docker implements Closeable {
 			cmd.add("-w");
 			cmd.add(def.getWorkingDirectory());
 		}
+
+		cmd.addAll(def.getCustomOptions());
 
 		cmd.add(def.getImage());
 		cmd.addAll(def.getCommand());

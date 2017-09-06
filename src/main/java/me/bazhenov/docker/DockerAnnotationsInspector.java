@@ -55,9 +55,11 @@ public class DockerAnnotationsInspector {
 
 	private static ContainerDefinition createContainerDefinitionFromAnnotation(Container annotation) {
 		ContainerDefinition def = new ContainerDefinition(annotation.image(), annotation.command());
-		fillExposePorts(annotation, def);
+		fillPublishedPorts(annotation, def);
 		fillEnvironmentVariables(annotation, def);
+		fillCustomOptions(annotation, def);
 		def.setRemoveAfterCompletion(annotation.removeAfterCompletion());
+		def.setWaitForAllExposedPortsToBeOpen(annotation.waitForAllExposedPorts());
 		if (!annotation.workingDir().isEmpty()) {
 			def.setWorkingDirectory(annotation.workingDir());
 		}
@@ -71,11 +73,19 @@ public class DockerAnnotationsInspector {
 		}
 	}
 
-	private static void fillExposePorts(Container annotation, ContainerDefinition execution) {
-		Set<Integer> ports = new HashSet<>();
+	private static void fillPublishedPorts(Container annotation, ContainerDefinition execution) {
+		Set<String> ports = new HashSet<>();
+		Collections.addAll(ports, annotation.publishPorts());
+
 		for (int i : annotation.exposePorts())
-			ports.add(i);
-		execution.setExposePorts(ports);
+			ports.add(String.valueOf(i));
+
+		execution.setPublishedPortsDefinition(ports);
+	}
+
+	private static void fillCustomOptions(Container annotation, ContainerDefinition execution) {
+		for (String option : annotation.options())
+			execution.addCustomOption(option);
 	}
 
 	public Collection<ContainerNamespace> getAllNamespaces() {

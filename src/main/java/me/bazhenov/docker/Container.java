@@ -52,14 +52,31 @@ public @interface Container {
 	int[] exposePorts() default {};
 
 	/**
+	 * @return TCP ports to be published from a container to the host machine.
+	 * format: ip:hostPort:containerPort | ip::containerPort | hostPort:containerPort | containerPort
+	 */
+	String[] publishPorts() default {};
+
+	/**
 	 * @return list of environment variables which will be passed to a process running in the container
 	 */
 	String[] environment() default {};
 
 	/**
+	 * @see <a href="https://docs.docker.com/engine/reference/run">docker run documentation</a>
+	 * @return list of custom options for docker run command
+	 */
+	String[] options() default {};
+
+	/**
 	 * @return should be container removed after test execution or not
 	 */
 	boolean removeAfterCompletion() default true;
+
+	/**
+	 * @return wait for all exposed ports to be open in container
+	 */
+	boolean waitForAllExposedPorts() default true;
 
 	/**
 	 * @return working directory of a process inside a container
