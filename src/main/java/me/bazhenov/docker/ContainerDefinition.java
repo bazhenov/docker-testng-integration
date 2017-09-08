@@ -4,14 +4,13 @@ import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toSet;
 
 @SuppressWarnings("WeakerAccess")
 public final class ContainerDefinition {
 
 	private final String image;
 	private final List<String> command;
-	private Set<String> publishedPortsDefinition = new HashSet<>();
+	private Map<Integer, Integer> publishedPorts = new HashMap<>();
 	private Map<String, String> environment = new HashMap<>();
 	private List<String> customOptions = new LinkedList<>();
 	private boolean removeAfterCompletion = true;
@@ -28,16 +27,23 @@ public final class ContainerDefinition {
 		return image;
 	}
 
-	public Set<String> getPublishedPortsDefinition() {
-		return publishedPortsDefinition;
+	public Map<Integer, Integer> getPublishedPorts() {
+		return publishedPorts;
 	}
 
-	public void setExposePorts(Set<Integer> exposePorts) {
-		this.publishedPortsDefinition = exposePorts.stream().map(Object::toString).collect(toSet());
+	/**
+	 * @param port container port which should be published to random host port
+	 */
+	public void addPublishedPort(int port) {
+		addPublishedPort(port, 0);
 	}
 
-	public void setPublishedPortsDefinition(Set<String> publishedPorts) {
-		this.publishedPortsDefinition = publishedPorts;
+	/**
+	 * @param atContainer container port which should be published
+	 * @param atHost host port which should be mapped on container port. if atHost <= 0 port will be random
+	 */
+	public void addPublishedPort(int atContainer, int atHost) {
+		publishedPorts.put(atContainer, atHost);
 	}
 
 	public List<String> getCustomOptions() {
@@ -104,7 +110,7 @@ public final class ContainerDefinition {
 			waitForAllExposedPortsToBeOpen == that.waitForAllExposedPortsToBeOpen &&
 			Objects.equals(image, that.image) &&
 			Objects.equals(command, that.command) &&
-			Objects.equals(publishedPortsDefinition, that.publishedPortsDefinition) &&
+			Objects.equals(publishedPorts, that.publishedPorts) &&
 			Objects.equals(environment, that.environment) &&
 			Objects.equals(workingDirectory, that.workingDirectory) &&
 			Objects.equals(mountPoints, that.mountPoints) &&
@@ -113,7 +119,7 @@ public final class ContainerDefinition {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(image, command, publishedPortsDefinition, environment, removeAfterCompletion, waitForAllExposedPortsToBeOpen,
+		return Objects.hash(image, command, publishedPorts, environment, removeAfterCompletion, waitForAllExposedPortsToBeOpen,
 			workingDirectory, mountPoints, customOptions);
 	}
 }

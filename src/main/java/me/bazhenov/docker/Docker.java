@@ -95,7 +95,7 @@ public final class Docker implements Closeable {
 			checkContainerState(cid, "running");
 
 			if (shouldWaitForOpenPorts(definition))
-				waitForPorts(cid, parseContainerPorts(definition.getPublishedPortsDefinition()));
+				waitForPorts(cid, definition.getPublishedPorts().keySet());
 
 			return cid;
 		} catch (IOException e) {
@@ -104,14 +104,8 @@ public final class Docker implements Closeable {
 		}
 	}
 
-	private static Set<Integer> parseContainerPorts(Set<String> publishedPortsDefinition) {
-		return publishedPortsDefinition.stream()
-			.map(d -> Integer.valueOf(d.substring(d.lastIndexOf(':') + 1)))
-			.collect(toSet());
-	}
-
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
-		return !definition.getPublishedPortsDefinition().isEmpty() && definition.isWaitForAllExposedPortsToBeOpen();
+		return !definition.getPublishedPorts().isEmpty() && definition.isWaitForAllExposedPortsToBeOpen();
 	}
 
 	private void ensureImageAvailable(String image) throws IOException, InterruptedException {
@@ -179,10 +173,10 @@ public final class Docker implements Closeable {
 			cmd.addAll(asList(additionalOpts));
 		}
 
-		for (String port : def.getPublishedPortsDefinition()) {
+		def.getPublishedPorts().forEach((key, value) -> {
 			cmd.add("-p");
-			cmd.add(port);
-		}
+			cmd.add(value > 0 ? value + ":" + key : String.valueOf(key));
+		});
 
 		// Mounting internal volumes
 		for (String mountPoint : def.getMountPoints()) {

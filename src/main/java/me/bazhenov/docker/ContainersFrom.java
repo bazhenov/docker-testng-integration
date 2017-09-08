@@ -13,7 +13,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <p>
  * Typical use:
  * <pre>
- *   &#064;Container(name="mysql", exposePorts=3306, image="mysql:5.6", environment={"MYSQL_ROOT_PASSWORD=secret"})
+ *   &#064;Container(name="mysql", publish=@Port(3306), image="mysql:5.6", environment={"MYSQL_ROOT_PASSWORD=secret"})
  *   class SharedContainers {}
  *
  *   &#064;ContainersFrom(SharedContainers.class)

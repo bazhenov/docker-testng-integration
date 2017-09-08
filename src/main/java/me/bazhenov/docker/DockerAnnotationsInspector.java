@@ -74,13 +74,8 @@ public class DockerAnnotationsInspector {
 	}
 
 	private static void fillPublishedPorts(Container annotation, ContainerDefinition execution) {
-		Set<String> ports = new HashSet<>();
-		Collections.addAll(ports, annotation.publishPorts());
-
-		for (int i : annotation.exposePorts())
-			ports.add(String.valueOf(i));
-
-		execution.setPublishedPortsDefinition(ports);
+		for (Port port : annotation.publish())
+			execution.addPublishedPort(port.value(), port.atHost());
 	}
 
 	private static void fillCustomOptions(Container annotation, ContainerDefinition execution) {

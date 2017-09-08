@@ -14,7 +14,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <p>
  * Typical usage:
  * <pre>
- *   &#064;Container(name="mysql", exposePorts=3306, image=...)
+ *   &#064;Container(name="mysql", publish=@Port(3306), image=...)
  *   &#064;Listeners(DockerTestNgListener.class)
  *   &#064;Listeners(DockerTestNgListener.class)
  *   class SampleTest {
