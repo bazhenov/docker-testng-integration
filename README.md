@@ -63,6 +63,9 @@ using Maven, just add following config to your `pom.xml`:
 </build>
 ```
 
+You should remember that registering listener both in XML and test classes (using annotations) will result in container being
+started twice.
+
 By default all containers are local to the test case. So if you define two test cases with container named `mysql`, 2 mysql 
 instances will be started. One for each test case. But you can share containers between test cases, if you need to.
 
