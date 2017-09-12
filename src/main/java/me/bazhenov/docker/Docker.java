@@ -58,6 +58,7 @@ public final class Docker implements Closeable {
 	 * @return stdout of a container
 	 * @throws IOException in case when container finished with non-zero exit code or any other problem when
 	 *                     starting container
+	 * @throws InterruptedException when thread was interrupted
 	 */
 	public String executeAndReturnOutput(ContainerDefinition definition) throws IOException, InterruptedException {
 		return readFully(execute(definition).getInputStream());
@@ -74,6 +75,7 @@ public final class Docker implements Closeable {
 	 * @param definition container definition
 	 * @return container id
 	 * @throws IOException if there is error while starting container
+	 * @throws InterruptedException when thread was interrupted
 	 */
 	public String start(ContainerDefinition definition) throws IOException, InterruptedException {
 		ensureImageAvailable(definition.getImage());
@@ -230,8 +232,9 @@ public final class Docker implements Closeable {
 		long start = currentTimeMillis();
 		boolean reported = false;
 		while (!self.isInterrupted()) {
-			String output = docker("exec", cid, "cat", "/proc/self/net/tcp");
-			Set<Integer> openPorts = readListenPorts(output);
+			Set<Integer> openPorts = new HashSet<>();
+			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp")));
+			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp6")));
 			if (openPorts.containsAll(ports))
 				return;
 
@@ -266,6 +269,8 @@ public final class Docker implements Closeable {
 	/**
 	 * @param containerName container name or id
 	 * @return Map where keys are container ports and values are host ports
+	 * @throws IOException if there is error while docker inspecting
+	 * @throws InterruptedException when thread was interrupted
 	 */
 	public Map<Integer, Integer> getPublishedTcpPorts(String containerName) throws IOException, InterruptedException {
 		String json = docker("inspect", containerName);
@@ -321,7 +326,7 @@ public final class Docker implements Closeable {
 
 		while (scanner.hasNextLine()) {
 			scanner.nextInt();
-			scanner.nextInt();
+			scanner.next();
 			int localPort = scanner.nextInt();
 			result.add(localPort);
 			scanner.nextLine();

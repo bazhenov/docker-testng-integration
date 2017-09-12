@@ -40,7 +40,7 @@ public final class ContainerDefinition {
 
 	/**
 	 * @param atContainer container port which should be published
-	 * @param atHost host port which should be mapped on container port. if atHost <= 0 port will be random
+	 * @param atHost host port which should be mapped on container port. if atHost &lt;= 0 port will be random
 	 */
 	public void addPublishedPort(int atContainer, int atHost) {
 		publishedPorts.put(atContainer, atHost);

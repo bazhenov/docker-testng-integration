@@ -21,6 +21,7 @@ public class DockerAnnotationsInspector {
 	 * All saved namespaces accessible using {@link #getAllNamespaces()}
 	 *
 	 * @param clazz test case class
+	 * @return set of containers accessible from given test case
 	 */
 	public ContainerNamespace createNamespace(Class<?> clazz) {
 		ContainerNamespace existingNamespace = namespaces.get(clazz);
@@ -92,6 +93,7 @@ public class DockerAnnotationsInspector {
 	 * used to pass container ports to a test before start
 	 *
 	 * @param clazz test object type
+	 * @return notification method definition
 	 */
 	public Optional<NotificationMethod> resolveNotificationMethod(Class<?> clazz) {
 		ContainerNamespace namespace = namespaces.get(clazz);
@@ -114,7 +116,7 @@ public class DockerAnnotationsInspector {
 			return Optional.of(new NotificationMethod(namespace, method, portReferences));
 
 		}
-		return null;
+		return Optional.empty();
 	}
 
 	private ContainerPort retrieveAnnotation(Annotation[] args) {
