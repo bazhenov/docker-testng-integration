@@ -15,7 +15,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <p>
  * Typical usage:
  * <pre>
- *   &#064;Container(name="mysql", exposePorts=3306, image="mysql:5.6", environment={"MYSQL_ROOT_PASSWORD=secret"})
+ *   &#064;Container(name="mysql", publish=@Port(3306), image="mysql:5.6", environment={"MYSQL_ROOT_PASSWORD=secret"})
  *   &#064;Listeners(DockerTestNgListener.class)
  *   public class SampleTest {
  *
@@ -47,9 +47,9 @@ public @interface Container {
 	String[] command() default {};
 
 	/**
-	 * @return TCP ports to be exposed from a container to the host machine
+	 * @return TCP ports to be published from a container to the host machine.
 	 */
-	int[] exposePorts() default {};
+	Port[] publish() default {};
 
 	/**
 	 * @return list of environment variables which will be passed to a process running in the container
@@ -57,9 +57,20 @@ public @interface Container {
 	String[] environment() default {};
 
 	/**
+	 * @see <a href="https://docs.docker.com/engine/reference/run">docker run documentation</a>
+	 * @return list of custom options for docker run command
+	 */
+	String[] options() default {};
+
+	/**
 	 * @return should be container removed after test execution or not
 	 */
 	boolean removeAfterCompletion() default true;
+
+	/**
+	 * @return wait for all exposed ports to be open in container
+	 */
+	boolean waitForAllExposedPorts() default true;
 
 	/**
 	 * @return working directory of a process inside a container

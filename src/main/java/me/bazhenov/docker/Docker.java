@@ -19,6 +19,7 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -57,6 +58,7 @@ public final class Docker implements Closeable {
 	 * @return stdout of a container
 	 * @throws IOException in case when container finished with non-zero exit code or any other problem when
 	 *                     starting container
+	 * @throws InterruptedException when thread was interrupted
 	 */
 	public String executeAndReturnOutput(ContainerDefinition definition) throws IOException, InterruptedException {
 		return readFully(execute(definition).getInputStream());
@@ -73,6 +75,7 @@ public final class Docker implements Closeable {
 	 * @param definition container definition
 	 * @return container id
 	 * @throws IOException if there is error while starting container
+	 * @throws InterruptedException when thread was interrupted
 	 */
 	public String start(ContainerDefinition definition) throws IOException, InterruptedException {
 		ensureImageAvailable(definition.getImage());
@@ -94,7 +97,7 @@ public final class Docker implements Closeable {
 			checkContainerState(cid, "running");
 
 			if (shouldWaitForOpenPorts(definition))
-				waitForPorts(cid, definition.getExposePorts());
+				waitForPorts(cid, definition.getPublishedPorts().keySet());
 
 			return cid;
 		} catch (IOException e) {
@@ -104,7 +107,7 @@ public final class Docker implements Closeable {
 	}
 
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
-		return !definition.getExposePorts().isEmpty() && definition.isWaitForAllExposedPortsToBeOpen();
+		return !definition.getPublishedPorts().isEmpty() && definition.isWaitForAllExposedPortsToBeOpen();
 	}
 
 	private void ensureImageAvailable(String image) throws IOException, InterruptedException {
@@ -172,10 +175,10 @@ public final class Docker implements Closeable {
 			cmd.addAll(asList(additionalOpts));
 		}
 
-		for (Integer port : def.getExposePorts()) {
+		def.getPublishedPorts().forEach((key, value) -> {
 			cmd.add("-p");
-			cmd.add(port.toString());
-		}
+			cmd.add(value > 0 ? value + ":" + key : String.valueOf(key));
+		});
 
 		// Mounting internal volumes
 		for (String mountPoint : def.getMountPoints()) {
@@ -195,6 +198,8 @@ public final class Docker implements Closeable {
 			cmd.add("-w");
 			cmd.add(def.getWorkingDirectory());
 		}
+
+		cmd.addAll(def.getCustomOptions());
 
 		cmd.add(def.getImage());
 		cmd.addAll(def.getCommand());
@@ -227,8 +232,9 @@ public final class Docker implements Closeable {
 		long start = currentTimeMillis();
 		boolean reported = false;
 		while (!self.isInterrupted()) {
-			String output = docker("exec", cid, "cat", "/proc/self/net/tcp");
-			Set<Integer> openPorts = readListenPorts(output);
+			Set<Integer> openPorts = new HashSet<>();
+			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp")));
+			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp6")));
 			if (openPorts.containsAll(ports))
 				return;
 
@@ -263,6 +269,8 @@ public final class Docker implements Closeable {
 	/**
 	 * @param containerName container name or id
 	 * @return Map where keys are container ports and values are host ports
+	 * @throws IOException if there is error while docker inspecting
+	 * @throws InterruptedException when thread was interrupted
 	 */
 	public Map<Integer, Integer> getPublishedTcpPorts(String containerName) throws IOException, InterruptedException {
 		String json = docker("inspect", containerName);
@@ -318,7 +326,7 @@ public final class Docker implements Closeable {
 
 		while (scanner.hasNextLine()) {
 			scanner.nextInt();
-			scanner.nextInt();
+			scanner.next();
 			int localPort = scanner.nextInt();
 			result.add(localPort);
 			scanner.nextLine();

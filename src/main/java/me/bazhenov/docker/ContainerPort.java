@@ -22,7 +22,7 @@ public @interface ContainerPort {
 	String name();
 
 	/**
-	 * @return port number given in {@link Container#exposePorts()}
+	 * @return port number given in {@link Container#publish()}
 	 */
 	int port();
 }

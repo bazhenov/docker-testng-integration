@@ -21,6 +21,7 @@ public class DockerAnnotationsInspector {
 	 * All saved namespaces accessible using {@link #getAllNamespaces()}
 	 *
 	 * @param clazz test case class
+	 * @return set of containers accessible from given test case
 	 */
 	public ContainerNamespace createNamespace(Class<?> clazz) {
 		ContainerNamespace existingNamespace = namespaces.get(clazz);
@@ -55,9 +56,11 @@ public class DockerAnnotationsInspector {
 
 	private static ContainerDefinition createContainerDefinitionFromAnnotation(Container annotation) {
 		ContainerDefinition def = new ContainerDefinition(annotation.image(), annotation.command());
-		fillExposePorts(annotation, def);
+		fillPublishedPorts(annotation, def);
 		fillEnvironmentVariables(annotation, def);
+		fillCustomOptions(annotation, def);
 		def.setRemoveAfterCompletion(annotation.removeAfterCompletion());
+		def.setWaitForAllExposedPortsToBeOpen(annotation.waitForAllExposedPorts());
 		if (!annotation.workingDir().isEmpty()) {
 			def.setWorkingDirectory(annotation.workingDir());
 		}
@@ -71,11 +74,14 @@ public class DockerAnnotationsInspector {
 		}
 	}
 
-	private static void fillExposePorts(Container annotation, ContainerDefinition execution) {
-		Set<Integer> ports = new HashSet<>();
-		for (int i : annotation.exposePorts())
-			ports.add(i);
-		execution.setExposePorts(ports);
+	private static void fillPublishedPorts(Container annotation, ContainerDefinition execution) {
+		for (Port port : annotation.publish())
+			execution.addPublishedPort(port.value(), port.atHost());
+	}
+
+	private static void fillCustomOptions(Container annotation, ContainerDefinition execution) {
+		for (String option : annotation.options())
+			execution.addCustomOption(option);
 	}
 
 	public Collection<ContainerNamespace> getAllNamespaces() {
@@ -87,6 +93,7 @@ public class DockerAnnotationsInspector {
 	 * used to pass container ports to a test before start
 	 *
 	 * @param clazz test object type
+	 * @return notification method definition
 	 */
 	public Optional<NotificationMethod> resolveNotificationMethod(Class<?> clazz) {
 		ContainerNamespace namespace = namespaces.get(clazz);
@@ -109,7 +116,7 @@ public class DockerAnnotationsInspector {
 			return Optional.of(new NotificationMethod(namespace, method, portReferences));
 
 		}
-		return null;
+		return Optional.empty();
 	}
 
 	private ContainerPort retrieveAnnotation(Annotation[] args) {

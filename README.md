@@ -18,10 +18,10 @@ Include dependency in your `pom.xml`
 ```
 
 Then in your test use class-level annotation `@Container` (you can provide several annotations), as well as method-level
-annotation `@AfterContainerStart`. You alse need to register `me.bazhenov.docker.DockerTestNgListener`
+annotation `@AfterContainerStart`. You also need to register `me.bazhenov.docker.DockerTestNgListener`
 
 ```java
-@Container(name = "my-container", image = "mysql", exposePorts = 3306, environment =
+@Container(name = "my-container", image = "mysql", publish = @Port(3306), environment =
   {"MYSQL_ROOT_PASSWORD=secret"})
 @Listeners(DockerTestNgListener.class)
 public class MySqlIT {
@@ -70,7 +70,7 @@ By default all containers are local to the test case. So if you define two test 
 instances will be started. One for each test case. But you can share containers between test cases, if you need to.
 
 ```java
-@Container(image = "mysql:5.6", name = "mysql", exposePorts = {3306})
+@Container(image = "mysql:5.6", name = "mysql", publish = @Port(3306))
 class SharedContainers {}
 
 @ContainersFrom(SharedContainers.class)

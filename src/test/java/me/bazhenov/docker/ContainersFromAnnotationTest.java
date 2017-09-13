@@ -36,8 +36,7 @@ public class ContainersFromAnnotationTest {
 	}
 }
 
-@Container(name = "nc1", image = "alpine",
-	command = {"nc", "-lkp", "1234", "-s", "0.0.0.0", "-e", "echo", "-e", "HTTP/1.1 200 OK\n\nHello"},
-	exposePorts = 1234) class SharedContainers {
-
-}
+@Container(name = "nc1", image = "alpine", publish = @Port(1234),
+	command = {"nc", "-lkp", "1234", "-s", "0.0.0.0", "-e", "echo", "-e", "HTTP/1.1 200 OK\n\nHello"}
+)
+class SharedContainers {}

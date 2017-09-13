@@ -53,7 +53,7 @@ public class DockerTest {
 	@Test
 	public void executeDemonizedContainer() throws IOException, InterruptedException {
 		ContainerDefinition execution = new ContainerDefinition("alpine", "nc", "-lp", "1234", "-s", "0.0.0.0");
-		execution.setExposePorts(singleton(1234));
+		execution.addPublishedPort(1234);
 
 		String containerName = docker.start(execution);
 		Map<Integer, Integer> ports = docker.getPublishedTcpPorts(containerName);
