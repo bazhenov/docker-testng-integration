@@ -59,6 +59,7 @@ public class DockerAnnotationsInspector {
 		fillPublishedPorts(annotation, def);
 		fillEnvironmentVariables(annotation, def);
 		fillCustomOptions(annotation, def);
+		fillVolumes(annotation, def);
 		def.setRemoveAfterCompletion(annotation.removeAfterCompletion());
 		def.setWaitForAllExposedPortsToBeOpen(annotation.waitForAllExposedPorts());
 		if (!annotation.workingDir().isEmpty()) {
@@ -67,21 +68,27 @@ public class DockerAnnotationsInspector {
 		return def;
 	}
 
-	private static void fillEnvironmentVariables(Container annotation, ContainerDefinition execution) {
-		for (String value : annotation.environment()) {
-			String[] parts = value.split("=", 2);
-			execution.addEnvironment(parts[0], parts[1]);
+	private static void fillVolumes(Container annotation, ContainerDefinition def) {
+		for (Volume volume : annotation.volumes()) {
+			def.addVolume(volume.value(), volume.atHost());
 		}
 	}
 
-	private static void fillPublishedPorts(Container annotation, ContainerDefinition execution) {
-		for (Port port : annotation.publish())
-			execution.addPublishedPort(port.value(), port.atHost());
+	private static void fillEnvironmentVariables(Container annotation, ContainerDefinition def) {
+		for (String value : annotation.environment()) {
+			String[] parts = value.split("=", 2);
+			def.addEnvironment(parts[0], parts[1]);
+		}
 	}
 
-	private static void fillCustomOptions(Container annotation, ContainerDefinition execution) {
+	private static void fillPublishedPorts(Container annotation, ContainerDefinition def) {
+		for (Port port : annotation.publish())
+			def.addPublishedPort(port.value(), port.atHost());
+	}
+
+	private static void fillCustomOptions(Container annotation, ContainerDefinition def) {
 		for (String option : annotation.options())
-			execution.addCustomOption(option);
+			def.addCustomOption(option);
 	}
 
 	public Collection<ContainerNamespace> getAllNamespaces() {
@@ -132,9 +139,5 @@ public class DockerAnnotationsInspector {
 			if (type != int.class)
 				throw new IllegalStateException("All method parameters should be of type int: " + method);
 		}
-	}
-
-	public ContainerNamespace getNamespace(Class<?> aClass) {
-		return namespaces.get(aClass);
 	}
 }

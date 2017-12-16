@@ -51,6 +51,8 @@ public @interface Container {
 	 */
 	Port[] publish() default {};
 
+	Volume[] volumes() default {};
+
 	/**
 	 * @return list of environment variables which will be passed to a process running in the container
 	 */

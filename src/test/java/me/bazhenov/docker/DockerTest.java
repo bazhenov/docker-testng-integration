@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static java.util.Collections.singleton;
 import static me.bazhenov.docker.Docker.readListenPorts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -67,6 +66,14 @@ public class DockerTest {
 
 		String output = docker.executeAndReturnOutput(def);
 		assertThat(output, is("hello"));
+	}
+
+	@Test
+	public void shouldBeAbleToMapVolumes() throws IOException, InterruptedException {
+		ContainerDefinition definition = new ContainerDefinition("alpine", "cat", "/opt/response");
+		definition.addVolume("/opt/response", "./src/test/resources/response.txt");
+		String out = docker.executeAndReturnOutput(definition);
+		assertThat(out, containsString("Volume response"));
 	}
 
 	@Test

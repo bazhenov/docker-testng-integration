@@ -19,7 +19,6 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -56,8 +55,8 @@ public final class Docker implements Closeable {
 	 *
 	 * @param definition definition of a container
 	 * @return stdout of a container
-	 * @throws IOException in case when container finished with non-zero exit code or any other problem when
-	 *                     starting container
+	 * @throws IOException          in case when container finished with non-zero exit code or any other problem when
+	 *                              starting container
 	 * @throws InterruptedException when thread was interrupted
 	 */
 	public String executeAndReturnOutput(ContainerDefinition definition) throws IOException, InterruptedException {
@@ -74,7 +73,7 @@ public final class Docker implements Closeable {
 	 *
 	 * @param definition container definition
 	 * @return container id
-	 * @throws IOException if there is error while starting container
+	 * @throws IOException          if there is error while starting container
 	 * @throws InterruptedException when thread was interrupted
 	 */
 	public String start(ContainerDefinition definition) throws IOException, InterruptedException {
@@ -180,10 +179,15 @@ public final class Docker implements Closeable {
 			cmd.add(value > 0 ? value + ":" + key : String.valueOf(key));
 		});
 
-		// Mounting internal volumes
-		for (String mountPoint : def.getMountPoints()) {
-			cmd.add("-v");
-			cmd.add(mountPoint);
+		// Mounting volumes
+		for (Map.Entry<String, String> volume : def.getVolumes().entrySet()) {
+			if (volume.getValue() == null || volume.getValue().isEmpty()) {
+				cmd.add("-v");
+				cmd.add(volume.getKey());
+			} else {
+				cmd.add("-v");
+				cmd.add(volume.getValue() + ":" + volume.getKey());
+			}
 		}
 
 		for (Map.Entry<String, String> i : def.getEnvironment().entrySet()) {
@@ -269,7 +273,7 @@ public final class Docker implements Closeable {
 	/**
 	 * @param containerName container name or id
 	 * @return Map where keys are container ports and values are host ports
-	 * @throws IOException if there is error while docker inspecting
+	 * @throws IOException          if there is error while docker inspecting
 	 * @throws InterruptedException when thread was interrupted
 	 */
 	public Map<Integer, Integer> getPublishedTcpPorts(String containerName) throws IOException, InterruptedException {

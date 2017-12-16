@@ -1,5 +1,6 @@
 package me.bazhenov.docker;
 
+import java.io.File;
 import java.util.*;
 
 import static java.util.Arrays.asList;
@@ -16,7 +17,7 @@ public final class ContainerDefinition {
 	private boolean removeAfterCompletion = true;
 	private boolean waitForAllExposedPortsToBeOpen = true;
 	private String workingDirectory;
-	private List<String> mountPoints = new ArrayList<>();
+	private Map<String, String> mountPoints = new LinkedHashMap<>();
 
 	public ContainerDefinition(String image, String... command) {
 		this.image = requireNonNull(image);
@@ -40,7 +41,7 @@ public final class ContainerDefinition {
 
 	/**
 	 * @param atContainer container port which should be published
-	 * @param atHost host port which should be mapped on container port. if atHost &lt;= 0 port will be random
+	 * @param atHost      host port which should be mapped on container port. if atHost &lt;= 0 port will be random
 	 */
 	public void addPublishedPort(int atContainer, int atHost) {
 		publishedPorts.put(atContainer, atHost);
@@ -94,10 +95,25 @@ public final class ContainerDefinition {
 		if (mountPoint == null || mountPoint.isEmpty()) {
 			throw new IllegalArgumentException();
 		}
-		mountPoints.add(mountPoint);
+		mountPoints.put(mountPoint, null);
 	}
 
-	public List<String> getMountPoints() {
+	public void addVolume(String mountPoint, String locationAtHost) {
+		if (mountPoint == null || mountPoint.isEmpty()) {
+			throw new IllegalArgumentException();
+		}
+		if (locationAtHost == null || locationAtHost.isEmpty()) {
+			addVolume(mountPoint);
+		} else {
+			File location = new File(locationAtHost);
+			if (!location.exists()) {
+				throw new IllegalArgumentException("File not found: " + locationAtHost);
+			}
+			mountPoints.put(mountPoint, location.getAbsolutePath());
+		}
+	}
+
+	public Map<String, String> getVolumes() {
 		return mountPoints;
 	}
 
