@@ -12,7 +12,7 @@ Include dependency in your `pom.xml`
 <dependency>
   <groupId>me.bazhenov</groupId>
   <artifactId>docker-testng-integration</artifactId>
-  <version>1.1</version>
+  <version>1.3</version>
   <scope>test</scope>
 </dependency>
 ```
@@ -26,7 +26,7 @@ annotation `@AfterContainerStart`. You also need to register `me.bazhenov.docker
 @Listeners(DockerTestNgListener.class)
 public class MySqlIT {
 
-  private int mysqlPort
+  private int mysqlPort;
 
   @AfterContainerStart
   public void setUp(@ContainerPort(name = "my-container", port = 3306) int port) {
@@ -79,7 +79,7 @@ class MyTestCase {
 
   @AfterContainerStart
   public void dockerSetup(@ContainerPort(name = "mysql", port = 3306) int mysqlPort) {
-    ...
+    // ...
   }
 }
 ```
@@ -91,6 +91,7 @@ In this case container `mysql` will be started just once and shared between all 
 * library using `docker` command line utility;
 * provides an easy way of getting dynamically allocated ports in tests;
 * mark all containers with `testng` label, so they could be easily found with `docker ps -af label=testng` command;
+* can map host directories as volumes inside a container;
 * waits for given ports to be open in a container, so containerized service is up at the moment of test starts;
 * library can share containers before several test cases using `@ContainersFrom` annotation. This allows to speed up test
 execution if you can reuse single container instead of starting a new container each time.
@@ -98,4 +99,3 @@ execution if you can reuse single container instead of starting a new container 
 ## Limitations
 
 * only TCP ports are exposed at the moment
-* there is no volume support at the moment

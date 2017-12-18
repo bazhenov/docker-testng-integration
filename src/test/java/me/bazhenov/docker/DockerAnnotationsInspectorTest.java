@@ -8,6 +8,7 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 
 public class DockerAnnotationsInspectorTest {
@@ -65,6 +66,13 @@ public class DockerAnnotationsInspectorTest {
 	}
 
 	@Test
+	public void shouldBeAbleToReadVolumeDefinitions() {
+		ContainerNamespace ns = inspector.createNamespace(VolumesTestCase.class);
+		ContainerDefinition def = ns.getDefinition("foo");
+		assertThat(def.getVolumes(), hasKey("/opt"));
+	}
+
+	@Test
 	public void shouldImportSharedContainers() {
 		ContainerNamespace case3 = inspector.createNamespace(TestCase3.class);
 		ContainerNamespace case4 = inspector.createNamespace(TestCase4.class);
@@ -72,35 +80,49 @@ public class DockerAnnotationsInspectorTest {
 		assertThat(case3.size(), is(1));
 		assertThat(case4.size(), is(1));
 	}
-}
 
-@Container(name = "foo", image = "image") class TestCase1 {
+	@Container(name = "foo", image = "image")
+	private static class TestCase1 {
 
-	private int port;
+		private int port;
 
-	@AfterContainerStart
-	public void afterStart(@ContainerPort(name = "foo", port = 13) int port) {
-		this.port = port;
+		@AfterContainerStart
+		public void afterStart(@ContainerPort(name = "foo", port = 13) int port) {
+			this.port = port;
+		}
+
+		int getPort() {
+			return port;
+		}
 	}
 
-	int getPort() {
-		return port;
+	@Container(name = "foo", image = "image1")
+	@Container(name = "bar", image = "image2")
+	private static class TestCase2 {
+
+	}
+
+	@Container(name = "shared", image = "mysql")
+	private static class LocalSharedContainers {
+
+	}
+
+	@ContainersFrom(LocalSharedContainers.class)
+	private static class TestCase3 {
+
+	}
+
+	@ContainersFrom(LocalSharedContainers.class)
+	private static class TestCase4 {
+
+	}
+
+	@Container(name = "foo", image = "im", volumes = {
+		@Volume(value = "/opt", atHost = "./")
+	})
+	private static class VolumesTestCase {
+
 	}
 }
 
-@Container(name = "foo", image = "image1")
-@Container(name = "bar", image = "image2") class TestCase2 {
 
-}
-
-@Container(name = "shared", image = "mysql") class LocalSharedContainers {
-
-}
-
-@ContainersFrom(LocalSharedContainers.class) class TestCase3 {
-
-}
-
-@ContainersFrom(LocalSharedContainers.class) class TestCase4 {
-
-}
