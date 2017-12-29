@@ -14,4 +14,9 @@ public @interface Volume {
 	 * @return path <i>at the host</i>
 	 */
 	String atHost();
+
+	/**
+	 * @return should empty directory be created at {@link #atHost()} path if it's missing
+	 */
+	boolean createDirectoryIfMissing() default true;
 }

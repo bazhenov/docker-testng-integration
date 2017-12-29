@@ -3,12 +3,12 @@ package me.bazhenov.docker;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 
 public class DockerAnnotationsInspectorTest {
@@ -69,7 +69,11 @@ public class DockerAnnotationsInspectorTest {
 	public void shouldBeAbleToReadVolumeDefinitions() {
 		ContainerNamespace ns = inspector.createNamespace(VolumesTestCase.class);
 		ContainerDefinition def = ns.getDefinition("foo");
-		assertThat(def.getVolumes(), hasKey("/opt"));
+		Collection<VolumeDef> volumes = def.getVolumes();
+		assertThat(volumes, hasSize(1));
+		VolumeDef vol = volumes.iterator().next();
+		assertThat(vol.getMountPoint(), is("/opt"));
+		assertThat(vol.isCreateDirectoryIfMissing(), is(true));
 	}
 
 	@Test
@@ -118,7 +122,7 @@ public class DockerAnnotationsInspectorTest {
 	}
 
 	@Container(name = "foo", image = "im", volumes = {
-		@Volume(value = "/opt", atHost = "./")
+		@Volume(value = "/opt", atHost = "./", createDirectoryIfMissing = true)
 	})
 	private static class VolumesTestCase {
 

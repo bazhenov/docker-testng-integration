@@ -1,5 +1,6 @@
 package me.bazhenov.docker;
 
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -69,8 +70,11 @@ public class DockerAnnotationsInspector {
 	}
 
 	private static void fillVolumes(Container annotation, ContainerDefinition def) {
-		for (Volume volume : annotation.volumes()) {
-			def.addVolume(volume.value(), volume.atHost());
+		for (Volume vDef : annotation.volumes()) {
+			File atHost = vDef.atHost().isEmpty()
+				? null
+				: new File(vDef.atHost());
+			def.addVolume(new VolumeDef(vDef.value(), atHost, vDef.createDirectoryIfMissing()));
 		}
 	}
 

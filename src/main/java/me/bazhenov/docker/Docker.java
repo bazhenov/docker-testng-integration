@@ -180,13 +180,16 @@ public final class Docker implements Closeable {
 		});
 
 		// Mounting volumes
-		for (Map.Entry<String, String> volume : def.getVolumes().entrySet()) {
-			if (volume.getValue() == null || volume.getValue().isEmpty()) {
+		for (VolumeDef volume : def.getVolumes()) {
+			File location = volume.getLocation();
+			String mountPoint = volume.getMountPoint();
+			if (location == null) {
 				cmd.add("-v");
-				cmd.add(volume.getKey());
+				cmd.add(mountPoint);
 			} else {
+				ensureVolumeCanBeMounted(volume, location);
 				cmd.add("-v");
-				cmd.add(volume.getValue() + ":" + volume.getKey());
+				cmd.add(location.getAbsolutePath() + ":" + mountPoint);
 			}
 		}
 
@@ -208,6 +211,18 @@ public final class Docker implements Closeable {
 		cmd.add(def.getImage());
 		cmd.addAll(def.getCommand());
 		return cmd;
+	}
+
+	private static void ensureVolumeCanBeMounted(VolumeDef volume, File location) {
+		if (!location.exists()) {
+			if (volume.isCreateDirectoryIfMissing()) {
+				if (!location.mkdirs()) {
+					throw new IllegalStateException("Unable to create directory: " + location);
+				}
+			} else {
+				throw new IllegalStateException("No file directory at: " + location);
+			}
+		}
 	}
 
 	private static String prettyFormatCommand(List<String> cmd) {

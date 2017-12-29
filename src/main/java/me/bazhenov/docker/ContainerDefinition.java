@@ -17,7 +17,7 @@ public final class ContainerDefinition {
 	private boolean removeAfterCompletion = true;
 	private boolean waitForAllExposedPortsToBeOpen = true;
 	private String workingDirectory;
-	private Map<String, String> mountPoints = new LinkedHashMap<>();
+	private Collection<VolumeDef> volumes = new ArrayList<>();
 
 	public ContainerDefinition(String image, String... command) {
 		this.image = requireNonNull(image);
@@ -92,29 +92,23 @@ public final class ContainerDefinition {
 	}
 
 	public void addVolume(String mountPoint) {
-		if (mountPoint == null || mountPoint.isEmpty()) {
-			throw new IllegalArgumentException();
-		}
-		mountPoints.put(mountPoint, null);
+		addVolume(mountPoint, null);
 	}
 
 	public void addVolume(String mountPoint, String locationAtHost) {
-		if (mountPoint == null || mountPoint.isEmpty()) {
-			throw new IllegalArgumentException();
-		}
-		if (locationAtHost == null || locationAtHost.isEmpty()) {
-			addVolume(mountPoint);
-		} else {
-			File location = new File(locationAtHost);
-			if (!location.exists()) {
-				throw new IllegalArgumentException("File not found: " + locationAtHost);
-			}
-			mountPoints.put(mountPoint, location.getAbsolutePath());
-		}
+		File location = locationAtHost == null
+			? null
+			: new File(locationAtHost);
+		addVolume(new VolumeDef(mountPoint, location));
 	}
 
-	public Map<String, String> getVolumes() {
-		return mountPoints;
+	public void addVolume(VolumeDef volume) {
+		requireNonNull(volume);
+		volumes.add(volume);
+	}
+
+	public Collection<VolumeDef> getVolumes() {
+		return volumes;
 	}
 
 	@Override
@@ -129,13 +123,13 @@ public final class ContainerDefinition {
 			Objects.equals(publishedPorts, that.publishedPorts) &&
 			Objects.equals(environment, that.environment) &&
 			Objects.equals(workingDirectory, that.workingDirectory) &&
-			Objects.equals(mountPoints, that.mountPoints) &&
+			Objects.equals(volumes, that.volumes) &&
 			Objects.equals(customOptions, that.customOptions);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(image, command, publishedPorts, environment, removeAfterCompletion, waitForAllExposedPortsToBeOpen,
-			workingDirectory, mountPoints, customOptions);
+			workingDirectory, volumes, customOptions);
 	}
 }
