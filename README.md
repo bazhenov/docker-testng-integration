@@ -12,7 +12,7 @@ Include dependency in your `pom.xml`
 <dependency>
   <groupId>me.bazhenov</groupId>
   <artifactId>docker-testng-integration</artifactId>
-  <version>1.3</version>
+  <version>1.3.1</version>
   <scope>test</scope>
 </dependency>
 ```
