@@ -10,6 +10,8 @@ import java.io.UncheckedIOException;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import static java.lang.Thread.currentThread;
+
 /**
  * Orchestrates container initialisation and tear down for TestNG.
  * <p>
@@ -55,7 +57,7 @@ public class DockerTestNgListener extends TestListenerAdapter {
 			throw new UncheckedIOException(e);
 
 		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+			currentThread().interrupt();
 		}
 	}
 

@@ -93,7 +93,7 @@ public final class Docker implements Closeable {
 
 			if (definition.isRemoveAfterCompletion())
 				containersToRemove.add(cid);
-			checkContainerState(cid, "running");
+			checkContainerRunning(cid);
 
 			if (shouldWaitForOpenPorts(definition))
 				waitForPorts(cid, definition.getPublishedPorts().keySet());
@@ -257,7 +257,7 @@ public final class Docker implements Closeable {
 			if (openPorts.containsAll(ports))
 				return;
 
-			checkContainerState(cid, "running");
+			checkContainerRunning(cid);
 
 			if (!reported && currentTimeMillis() - start > 5000) {
 				reported = true;
@@ -276,11 +276,11 @@ public final class Docker implements Closeable {
 		return doExecuteAndGetFullOutput(cmd);
 	}
 
-	private void checkContainerState(String id, String expectedState) throws IOException, InterruptedException {
+	private void checkContainerRunning(String id) throws IOException, InterruptedException {
 		String json = docker("inspect", id);
 		JsonNode root = jsonReader.readTree(json);
 		String state = root.at("/0/State/Status").asText();
-		if (!expectedState.equalsIgnoreCase(state)) {
+		if (!"running".equalsIgnoreCase(state)) {
 			throw new IllegalStateException("Container " + id + " failed to start. Current state: " + state);
 		}
 	}
@@ -307,11 +307,8 @@ public final class Docker implements Closeable {
 				doExecute(cmd);
 				containersToRemove.clear();
 
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-
 			} catch (InterruptedException e) {
-				Thread.interrupted();
+				currentThread().interrupt();
 			}
 		}
 	}
