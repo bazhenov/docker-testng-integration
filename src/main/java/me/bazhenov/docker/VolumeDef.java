@@ -3,6 +3,7 @@ package me.bazhenov.docker;
 import java.io.File;
 import java.util.Objects;
 
+@SuppressWarnings("WeakerAccess")
 public final class VolumeDef {
 
 	private final String mountPoint;

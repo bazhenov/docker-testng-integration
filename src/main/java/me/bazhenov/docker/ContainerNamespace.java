@@ -20,8 +20,7 @@ final class ContainerNamespace {
 	}
 
 	private static void ensureUniqueNames(Map<String, ContainerDefinition> defs, List<ContainerNamespace> namespaces) {
-		Set<String> visitedNamed = new HashSet<>();
-		visitedNamed.addAll(defs.keySet());
+		Set<String> visitedNamed = new HashSet<>(defs.keySet());
 		for (ContainerNamespace namespace : namespaces) {
 			for (String name : namespace.getDefinedNames()) {
 				if (!visitedNamed.add(name)) {
@@ -55,7 +54,7 @@ final class ContainerNamespace {
 		return defs.values();
 	}
 
-	Set<String> getDefinedNames() {
+	private Set<String> getDefinedNames() {
 		return defs.keySet();
 	}
 
