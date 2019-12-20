@@ -60,12 +60,8 @@ public final class Docker implements Closeable {
 	 * @throws InterruptedException when thread was interrupted
 	 */
 	public String executeAndReturnOutput(ContainerDefinition definition) throws IOException, InterruptedException {
-		return readFully(execute(definition).getInputStream());
-	}
-
-	public Process execute(ContainerDefinition definition) throws IOException, InterruptedException {
 		List<String> cmd = prepareDockerCommand(definition);
-		return doExecute(cmd);
+		return doExecuteAndGetFullOutput(cmd);
 	}
 
 	/**
@@ -110,8 +106,8 @@ public final class Docker implements Closeable {
 	}
 
 	private void ensureImageAvailable(String image) throws IOException, InterruptedException {
-		Process process = doExecute(asList(pathToDocker, "image", "inspect", image), new HashSet<>(asList(0, 1)));
-		if (process.exitValue() == 1) {
+		int exitValue = doExecute(asList(pathToDocker, "image", "inspect", image), new HashSet<>(asList(0, 1))).exitCode;
+		if (exitValue == 1) {
 			log.warn("Image {} is not found locally. It will take some time to download it.", image);
 		}
 	}
@@ -130,27 +126,37 @@ public final class Docker implements Closeable {
 	}
 
 	private static String doExecuteAndGetFullOutput(List<String> cmd) throws IOException, InterruptedException {
-		return readFully(doExecute(cmd).getInputStream());
+		return doExecute(cmd, singleton(0)).standardOutput;
 	}
 
-	private static Process doExecute(List<String> cmd) throws IOException, InterruptedException {
-		return doExecute(cmd, singleton(0));
+	private static class ExecutionResult {
+		int exitCode;
+		String standardOutput;
+		String errorOutput;
+
+		public ExecutionResult(int exitCode, String processOutput, String processError) {
+			this.exitCode = exitCode;
+			this.standardOutput = processOutput;
+			this.errorOutput = processError;
+		}
 	}
 
-	private static Process doExecute(List<String> cmd, Set<Integer> expectedExitCodes)
+	private static ExecutionResult doExecute(List<String> cmd, Set<Integer> expectedExitCodes)
 		throws IOException, InterruptedException {
 
 		Process process = runProcess(cmd);
 
+		String processOutput = readFully(process.getInputStream());
+		String processError = readFully(process.getErrorStream());
 		int exitCode = process.waitFor();
 		if (!expectedExitCodes.contains(exitCode)) {
 			throw new IOException("Unable to execute: " + String.join(" ", cmd) + "\n" +
 				"Exit code: " + exitCode + "\n" +
-				"Stderr: " + readFully(process.getErrorStream()) + "\n" +
-				"Stdout: " + readFully(process.getInputStream()));
+				"Stderr: " + processError + "\n" +
+				"Stdout: " + processOutput);
 		}
 
-		return process;
+		return new ExecutionResult(exitCode, processOutput, processError);
 	}
 
 	private static Process runProcess(List<String> cmd) throws IOException {
@@ -304,7 +310,7 @@ public final class Docker implements Closeable {
 			try {
 				List<String> cmd = new ArrayList<>(asList(pathToDocker, "rm", "-f", "-v"));
 				cmd.addAll(containersToRemove);
-				doExecute(cmd);
+				doExecute(cmd, singleton(0));
 				containersToRemove.clear();
 
 			} catch (InterruptedException e) {
