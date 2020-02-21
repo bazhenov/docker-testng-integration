@@ -33,6 +33,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 @SuppressWarnings("WeakerAccess")
 public final class Docker implements Closeable {
 
+	private static final String IPV6_FILE_PATH = "/proc/self/net/tcp6";
+    
 	private static final Logger log = getLogger(Docker.class);
 	private static final ObjectMapper jsonReader = new ObjectMapper();
 
@@ -256,10 +258,13 @@ public final class Docker implements Closeable {
 		Thread self = currentThread();
 		long start = currentTimeMillis();
 		boolean reported = false;
+		boolean isIPv6System = isIPv6System();
 		while (!self.isInterrupted()) {
 			Set<Integer> openPorts = new HashSet<>();
 			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp")));
-			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp6")));
+			if(isIPv6System)
+			    openPorts.addAll(readListenPorts(docker("exec", cid, "cat", IPV6_FILE_PATH)));
+			
 			if (openPorts.containsAll(ports))
 				return;
 
@@ -274,7 +279,11 @@ public final class Docker implements Closeable {
 		}
 	}
 
-	private String docker(String command, String... args) throws IOException, InterruptedException {
+  private boolean isIPv6System() {
+       return new File(IPV6_FILE_PATH).exists();
+  }
+
+  private String docker(String command, String... args) throws IOException, InterruptedException {
 		List<String> cmd = new ArrayList<>(args.length + 2);
 		cmd.add(pathToDocker);
 		cmd.add(command);
