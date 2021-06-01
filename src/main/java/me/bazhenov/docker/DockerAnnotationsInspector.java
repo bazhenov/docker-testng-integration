@@ -111,7 +111,7 @@ public class DockerAnnotationsInspector {
 		if (namespace == null) {
 			return Optional.empty();
 		}
-		for (Method method : clazz.getDeclaredMethods()) {
+		for (Method method : clazz.getMethods()) {
 			if (method.getAnnotation(AfterContainerStart.class) == null)
 				continue;
 

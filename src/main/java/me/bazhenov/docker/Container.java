@@ -1,5 +1,6 @@
 package me.bazhenov.docker;
 
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -29,6 +30,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(value = RUNTIME)
 @Target({TYPE_USE, TYPE})
 @Repeatable(ContainerGroup.class)
+@Inherited
 public @interface Container {
 
 	/**
@@ -59,8 +61,8 @@ public @interface Container {
 	String[] environment() default {};
 
 	/**
-	 * @see <a href="https://docs.docker.com/engine/reference/run">docker run documentation</a>
 	 * @return list of custom options for docker run command
+	 * @see <a href="https://docs.docker.com/engine/reference/run">docker run documentation</a>
 	 */
 	String[] options() default {};
 

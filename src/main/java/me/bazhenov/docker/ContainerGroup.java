@@ -1,5 +1,6 @@
 package me.bazhenov.docker;
 
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -10,6 +11,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @SuppressWarnings("WeakerAccess")
 @Target({TYPE_USE, TYPE})
 @Retention(value = RUNTIME)
+@Inherited
 public @interface ContainerGroup {
 
 	Container[] value();
