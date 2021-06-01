@@ -34,7 +34,7 @@ public class ContainerAnnotationTest {
 	}
 
 	@Test
-	public void foo() throws IOException {
+	public void foo() {
 		assertThat(hostPort1, greaterThan(1024));
 		assertThat(hostPort2, greaterThan(1024));
 		assertThat(hostPort3, equalTo(30001));
