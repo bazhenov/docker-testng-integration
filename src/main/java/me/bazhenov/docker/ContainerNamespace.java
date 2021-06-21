@@ -1,7 +1,10 @@
 package me.bazhenov.docker;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -9,14 +12,14 @@ import static java.util.Objects.requireNonNull;
  */
 final class ContainerNamespace {
 
-	private Map<String, ContainerDefinition> defs;
-	private List<ContainerNamespace> importNamespaces;
-	private Map<ContainerDefinition, Map<Integer, Integer>> tcpPorts = new HashMap<>();
+	private final Map<String, ContainerDefinition> defs;
+	private final List<ContainerNamespace> importNamespaces;
+	private final Map<ContainerDefinition, Map<Integer, Integer>> tcpPorts = new ConcurrentHashMap<>();
 
 	ContainerNamespace(Map<String, ContainerDefinition> defs, List<ContainerNamespace> importNamespaces) {
 		ensureUniqueNames(defs, importNamespaces);
-		this.defs = requireNonNull(defs);
-		this.importNamespaces = importNamespaces;
+		this.defs = unmodifiableMap(requireNonNull(defs));
+		this.importNamespaces = unmodifiableList(requireNonNull(importNamespaces));
 	}
 
 	private static void ensureUniqueNames(Map<String, ContainerDefinition> defs, List<ContainerNamespace> namespaces) {
@@ -37,11 +40,12 @@ final class ContainerNamespace {
 	}
 
 	ContainerDefinition getDefinition(String name) {
-		if (defs.containsKey(name)) {
-			return defs.get(name);
+		ContainerDefinition definition = defs.get(name);
+		if (definition != null) {
+			return definition;
 		} else {
 			for (ContainerNamespace namespace : importNamespaces) {
-				ContainerDefinition definition = namespace.getDefinition(name);
+				definition = namespace.getDefinition(name);
 				if (definition != null) {
 					return definition;
 				}

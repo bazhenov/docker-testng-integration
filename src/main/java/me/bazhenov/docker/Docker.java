@@ -17,6 +17,7 @@ import static java.nio.file.Files.readAllLines;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -37,7 +38,7 @@ public final class Docker implements Closeable {
 	private static final ObjectMapper jsonReader = new ObjectMapper();
 
 	private final String pathToDocker;
-	private final Set<String> containersToRemove = new HashSet<>();
+	private final Set<String> containersToRemove = newKeySet();
 
 	public Docker(String pathToDocker) {
 		this.pathToDocker = requireNonNull(pathToDocker);
