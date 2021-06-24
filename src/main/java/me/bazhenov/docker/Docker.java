@@ -17,6 +17,7 @@ import static java.nio.file.Files.readAllLines;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -37,7 +38,7 @@ public final class Docker implements Closeable {
 	private static final ObjectMapper jsonReader = new ObjectMapper();
 
 	private final String pathToDocker;
-	private final Set<String> containersToRemove = new HashSet<>();
+	private final Set<String> containersToRemove = newKeySet();
 
 	public Docker(String pathToDocker) {
 		this.pathToDocker = requireNonNull(pathToDocker);
@@ -87,9 +88,11 @@ public final class Docker implements Closeable {
 		try {
 			String cid = waitForCid(process, cidFile);
 
-			if (definition.isRemoveAfterCompletion())
+			if (definition.isRemoveAfterCompletion()) {
 				containersToRemove.add(cid);
-			checkContainerRunning(cid);
+			}
+
+			waitForContainerRun(cid, process);
 
 			if (shouldWaitForOpenPorts(definition))
 				waitForPorts(cid, definition.getPublishedPorts().keySet());
@@ -99,6 +102,23 @@ public final class Docker implements Closeable {
 			throw new UncheckedIOException("Unable to start container\n" +
 				"Container stderr: " + readFully(process.getErrorStream()), e);
 		}
+	}
+
+	private void waitForContainerRun(String cid, Process process) throws IOException, InterruptedException {
+		do {
+			String state = getContainerState(cid);
+			if ("running".equalsIgnoreCase(state)) {
+				return; // container is running, waiting is over
+			} else if ("created".equalsIgnoreCase(state)) {
+				sleep(100); // container may start not immediately. let's wait some time
+			} else if (!process.isAlive() && process.exitValue() != 0) {
+				throw new IllegalStateException("Unable to start container " + cid + "\n" +
+					"Exit code: " + process.exitValue() + "\n" +
+					"Stderr: " + readFully(process.getErrorStream()));
+			} else {
+				throw new IllegalStateException("Unable to start container " + cid + " current state is " + state);
+			}
+		} while (true);
 	}
 
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
@@ -283,12 +303,16 @@ public final class Docker implements Closeable {
 	}
 
 	private void checkContainerRunning(String id) throws IOException, InterruptedException {
-		String json = docker("inspect", id);
-		JsonNode root = jsonReader.readTree(json);
-		String state = root.at("/0/State/Status").asText();
+		String state = getContainerState(id);
 		if (!"running".equalsIgnoreCase(state)) {
 			throw new IllegalStateException("Container " + id + " failed to start. Current state: " + state);
 		}
+	}
+
+	private String getContainerState(String id) throws IOException, InterruptedException {
+		String json = docker("inspect", id);
+		JsonNode root = jsonReader.readTree(json);
+		return root.at("/0/State/Status").asText();
 	}
 
 	/**

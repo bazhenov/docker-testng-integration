@@ -7,8 +7,14 @@ import org.testng.annotations.Listeners;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static java.lang.Thread.currentThread;
 
@@ -27,6 +33,7 @@ public class DockerTestNgListener extends TestListenerAdapter {
 		super.onStart(testContext);
 
 		DockerAnnotationsInspector inspector = new DockerAnnotationsInspector();
+		ExecutorService starter = Executors.newCachedThreadPool();
 
 		try {
 			Map<Object, Boolean> testObjects = new IdentityHashMap<>();
@@ -39,12 +46,31 @@ public class DockerTestNgListener extends TestListenerAdapter {
 				.map(Object::getClass)
 				.forEach(inspector::createNamespace);
 
-			// Starting containers
+			List<Future<?>> futures = new ArrayList<>();
+
+			// Starting containers and waiting for ports in parallel threads
 			for (ContainerNamespace namespace : inspector.getAllNamespaces()) {
 				for (ContainerDefinition definition : namespace.getAllDefinitions()) {
-					String containerId = docker.start(definition);
-					Map<Integer, Integer> publishedTcpPorts = docker.getPublishedTcpPorts(containerId);
-					namespace.registerPublishedTcpPorts(definition, publishedTcpPorts);
+					futures.add(starter.submit(() -> {
+						try {
+							String containerId = docker.start(definition);
+							Map<Integer, Integer> publishedTcpPorts = docker.getPublishedTcpPorts(containerId);
+							namespace.registerPublishedTcpPorts(definition, publishedTcpPorts);
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						} catch (InterruptedException e) {
+							currentThread().interrupt();
+						}
+					}));
+				}
+			}
+
+			// Waiting for all containers ready
+			for (Future<?> future : futures) {
+				try {
+					future.get();
+				} catch (ExecutionException e) {
+					throw new RuntimeException(e);
 				}
 			}
 
@@ -52,12 +78,10 @@ public class DockerTestNgListener extends TestListenerAdapter {
 			for (Object test : testObjects.keySet()) {
 				inspector.resolveNotificationMethod(test.getClass()).ifPresent(m -> m.call(test));
 			}
-
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-
 		} catch (InterruptedException e) {
 			currentThread().interrupt();
+		} finally {
+			starter.shutdown();
 		}
 	}
 
