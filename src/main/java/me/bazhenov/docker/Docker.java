@@ -88,9 +88,11 @@ public final class Docker implements Closeable {
 		try {
 			String cid = waitForCid(process, cidFile);
 
-			if (definition.isRemoveAfterCompletion())
+			if (definition.isRemoveAfterCompletion()) {
 				containersToRemove.add(cid);
-			checkContainerRunning(cid);
+			}
+
+			waitForContainerRun(cid);
 
 			if (shouldWaitForOpenPorts(definition))
 				waitForPorts(cid, definition.getPublishedPorts().keySet());
@@ -100,6 +102,18 @@ public final class Docker implements Closeable {
 			throw new UncheckedIOException("Unable to start container\n" +
 				"Container stderr: " + readFully(process.getErrorStream()), e);
 		}
+	}
+
+	private void waitForContainerRun(String cid) throws IOException, InterruptedException {
+		for (int i = 0; i < 30; i++) {
+			String state = getContainerState(cid);
+			if ("running".equalsIgnoreCase(state)) {
+				return; // container is running, waiting is over
+			} else if ("created".equalsIgnoreCase(state)) {
+				sleep(100); // container may start not immediately. let's wait some time
+			}
+		}
+		checkContainerRunning(cid); // ended up trying or unknown state, last chance check
 	}
 
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
@@ -284,12 +298,16 @@ public final class Docker implements Closeable {
 	}
 
 	private void checkContainerRunning(String id) throws IOException, InterruptedException {
-		String json = docker("inspect", id);
-		JsonNode root = jsonReader.readTree(json);
-		String state = root.at("/0/State/Status").asText();
+		String state = getContainerState(id);
 		if (!"running".equalsIgnoreCase(state)) {
 			throw new IllegalStateException("Container " + id + " failed to start. Current state: " + state);
 		}
+	}
+
+	private String getContainerState(String id) throws IOException, InterruptedException {
+		String json = docker("inspect", id);
+		JsonNode root = jsonReader.readTree(json);
+		return root.at("/0/State/Status").asText();
 	}
 
 	/**
