@@ -92,7 +92,7 @@ public final class Docker implements Closeable {
 				containersToRemove.add(cid);
 			}
 
-			waitForContainerRun(cid);
+			waitForContainerRun(cid, process);
 
 			if (shouldWaitForOpenPorts(definition))
 				waitForPorts(cid, definition.getPublishedPorts().keySet());
@@ -104,16 +104,21 @@ public final class Docker implements Closeable {
 		}
 	}
 
-	private void waitForContainerRun(String cid) throws IOException, InterruptedException {
-		for (int i = 0; i < 30; i++) {
+	private void waitForContainerRun(String cid, Process process) throws IOException, InterruptedException {
+		do {
 			String state = getContainerState(cid);
 			if ("running".equalsIgnoreCase(state)) {
 				return; // container is running, waiting is over
 			} else if ("created".equalsIgnoreCase(state)) {
 				sleep(100); // container may start not immediately. let's wait some time
+			} else if (!process.isAlive() && process.exitValue() != 0) {
+				throw new IllegalStateException("Unable to start container " + cid + "\n" +
+					"Exit code: " + process.exitValue() + "\n" +
+					"Stderr: " + readFully(process.getErrorStream()));
+			} else {
+				throw new IllegalStateException("Unable to start container " + cid + " current state is " + state);
 			}
-		}
-		checkContainerRunning(cid); // ended up trying or unknown state, last chance check
+		} while (true);
 	}
 
 	private static boolean shouldWaitForOpenPorts(ContainerDefinition definition) {
