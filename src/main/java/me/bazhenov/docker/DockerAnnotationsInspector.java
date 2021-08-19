@@ -63,6 +63,8 @@ public class DockerAnnotationsInspector {
 		fillVolumes(annotation, def);
 		def.setRemoveAfterCompletion(annotation.removeAfterCompletion());
 		def.setWaitForAllExposedPortsToBeOpen(annotation.waitForAllExposedPorts());
+		def.setNetwork(annotation.network());
+		def.setNetworkAlias(annotation.networkAlias());
 		if (!annotation.workingDir().isEmpty()) {
 			def.setWorkingDirectory(annotation.workingDir());
 		}
