@@ -86,6 +86,26 @@ class MyTestCase {
 
 In this case container `mysql` will be started just once and shared between all test cases importing it using `@ContainersFrom`.
 
+## Networking
+
+You can create network between several containers:
+
+```java
+@Container(name = "mysql", image = "mysql", network = "my-test-network", networkAlias = "mysql-host")
+@Container(name = "node1", image = "node-needs-mysql", network = "my-test-network", environment =
+	{"NODE_JDBC_URL=jdbc:mysql://mysql-host:3306/db"})
+@Container(name = "node2", image = "node-needs-mysql", network = "my-test-network", environment =
+	{"NODE_JDBC_URL=jdbc:mysql://mysql-host:3306/db"})
+@Listeners(DockerTestNgListener.class)
+public class MyAppIT {
+  // ...
+}
+```
+
+Containers `mysql`, `node1` and `node2` will be started with the same network `my-test-network`.
+Container `mysql` will be accessible in this network by network alias `mysql-host` with all its ports.
+Port publishing is not necessary.
+
 ## Features
 
 * library using `docker` command line utility;
