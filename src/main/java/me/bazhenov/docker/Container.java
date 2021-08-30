@@ -80,4 +80,14 @@ public @interface Container {
 	 * @return working directory of a process inside a container
 	 */
 	String workingDir() default "";
+
+	/**
+	 * @return container network name
+	 */
+	String network() default "";
+
+	/**
+	 * @return container domain name in the container network
+	 */
+	String networkAlias() default "";
 }

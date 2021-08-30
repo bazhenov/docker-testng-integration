@@ -21,6 +21,7 @@ import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.testng.util.Strings.isNullOrEmpty;
 
 /**
  * This class provides Docker container facility.
@@ -39,6 +40,7 @@ public final class Docker implements Closeable {
 
 	private final String pathToDocker;
 	private final Set<String> containersToRemove = newKeySet();
+	private final Set<String> networks = newKeySet();
 
 	public Docker(String pathToDocker) {
 		this.pathToDocker = requireNonNull(pathToDocker);
@@ -75,6 +77,7 @@ public final class Docker implements Closeable {
 	 */
 	public String start(ContainerDefinition definition) throws IOException, InterruptedException {
 		ensureImageAvailable(definition.getImage());
+		createNetwork(definition.getNetwork());
 		File cidFile = createTempFile("docker", "cid");
 		cidFile.deleteOnExit();
 		// Docker requires cid-file to be not present at the moment of starting a container
@@ -101,6 +104,14 @@ public final class Docker implements Closeable {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Unable to start container\n" +
 				"Container stderr: " + readFully(process.getErrorStream()), e);
+		}
+	}
+
+	private void createNetwork(String network) throws IOException, InterruptedException {
+		synchronized (networks) {
+			if (!isNullOrEmpty(network) && networks.add(network)) {
+				docker("network", "create", network);
+			}
 		}
 	}
 
@@ -232,6 +243,16 @@ public final class Docker implements Closeable {
 			cmd.add(def.getWorkingDirectory());
 		}
 
+		String network = def.getNetwork();
+		if (!isNullOrEmpty(network)) {
+			cmd.add("--network=" + network);
+		}
+
+		String netAlias = def.getNetworkAlias();
+		if (!isNullOrEmpty(netAlias)) {
+			cmd.add("--network-alias=" + netAlias);
+		}
+
 		cmd.addAll(def.getCustomOptions());
 
 		cmd.add(def.getImage());
@@ -339,6 +360,19 @@ public final class Docker implements Closeable {
 
 			} catch (InterruptedException e) {
 				currentThread().interrupt();
+			}
+		}
+
+		synchronized (networks) {
+			if (!networks.isEmpty()) {
+				try {
+					for (String network : networks) {
+						docker("network", "rm", network);
+					}
+					networks.clear();
+				} catch (InterruptedException e) {
+					currentThread().interrupt();
+				}
 			}
 		}
 	}

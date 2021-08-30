@@ -11,13 +11,14 @@ public final class ContainerDefinition {
 
 	private final String image;
 	private final List<String> command;
-	private Map<Integer, Integer> publishedPorts = new HashMap<>();
-	private Map<String, String> environment = new HashMap<>();
-	private List<String> customOptions = new LinkedList<>();
+	private final Map<Integer, Integer> publishedPorts = new HashMap<>();
+	private final Map<String, String> environment = new HashMap<>();
+	private final List<String> customOptions = new LinkedList<>();
 	private boolean removeAfterCompletion = true;
 	private boolean waitForAllExposedPortsToBeOpen = true;
 	private String workingDirectory;
-	private Collection<VolumeDef> volumes = new ArrayList<>();
+	private String network, networkAlias;
+	private final Collection<VolumeDef> volumes = new ArrayList<>();
 
 	public ContainerDefinition(String image, String... command) {
 		this.image = requireNonNull(image);
@@ -109,6 +110,22 @@ public final class ContainerDefinition {
 
 	public Collection<VolumeDef> getVolumes() {
 		return volumes;
+	}
+
+	public void setNetwork(String network) {
+		this.network = network;
+	}
+
+	public String getNetwork() {
+		return network;
+	}
+
+	public void setNetworkAlias(String networkAlias) {
+		this.networkAlias = networkAlias;
+	}
+
+	public String getNetworkAlias() {
+		return networkAlias;
 	}
 
 	@Override
