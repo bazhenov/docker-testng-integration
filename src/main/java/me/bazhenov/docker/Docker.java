@@ -296,11 +296,13 @@ public final class Docker implements Closeable {
 	private void waitForPorts(String cid, Set<Integer> ports) throws IOException, InterruptedException {
 		Thread self = currentThread();
 		long start = currentTimeMillis();
+		List<String> tcpFiles = asList("/proc/self/net/tcp", "/proc/self/net/tcp6");
 		boolean reported = false;
 		while (!self.isInterrupted()) {
 			Set<Integer> openPorts = new HashSet<>();
-			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp")));
-			openPorts.addAll(readListenPorts(docker("exec", cid, "cat", "/proc/self/net/tcp6")));
+			for (String file : tcpFiles) {
+				openPorts.addAll(readListenPorts(docker("exec", cid, "sh", "-c", "[[ ! -f " + file + " ]] || cat " + file)));
+			}
 			if (openPorts.containsAll(ports))
 				return;
 
