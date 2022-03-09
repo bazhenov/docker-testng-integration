@@ -38,6 +38,8 @@ public final class Docker implements Closeable {
 	private static final Logger log = getLogger(Docker.class);
 	private static final ObjectMapper jsonReader = new ObjectMapper();
 
+	List<String> tcpFiles = asList("/proc/self/net/tcp", "/proc/self/net/tcp6");
+
 	private final String pathToDocker;
 	private final Set<String> containersToRemove = newKeySet();
 	private final Set<String> networks = newKeySet();
@@ -296,12 +298,11 @@ public final class Docker implements Closeable {
 	private void waitForPorts(String cid, Set<Integer> ports) throws IOException, InterruptedException {
 		Thread self = currentThread();
 		long start = currentTimeMillis();
-		List<String> tcpFiles = asList("/proc/self/net/tcp", "/proc/self/net/tcp6");
 		boolean reported = false;
 		while (!self.isInterrupted()) {
 			Set<Integer> openPorts = new HashSet<>();
 			for (String file : tcpFiles) {
-				openPorts.addAll(readListenPorts(docker("exec", cid, "sh", "-c", "[[ ! -f " + file + " ]] || cat " + file)));
+				openPorts.addAll(readListenPorts(docker("exec", cid, "sh", "-c", "[ ! -f " + file + " ] || cat " + file)));
 			}
 			if (openPorts.containsAll(ports))
 				return;

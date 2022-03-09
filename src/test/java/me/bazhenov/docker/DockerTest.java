@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static java.util.Arrays.asList;
 import static me.bazhenov.docker.Docker.readListenPorts;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -52,6 +53,17 @@ public class DockerTest {
 	@Test
 	public void executeDemonizedContainer() throws IOException, InterruptedException {
 		ContainerDefinition execution = new ContainerDefinition("alpine", "nc", "-lp", "1234", "-s", "0.0.0.0");
+		execution.addPublishedPort(1234);
+
+		String containerName = docker.start(execution);
+		Map<Integer, Integer> ports = docker.getPublishedTcpPorts(containerName);
+		assertThat(ports, hasKey(1234));
+	}
+
+	@Test
+	public void executeContainerWaitingForPublishedPortsWithRealShShellAndNotExistsTcpFile() throws Exception {
+		docker.tcpFiles = asList("/proc/self/net/tcp", "/proc/self/net/tcp6", "/proc/self/net/tcp-not-exists");
+		ContainerDefinition execution = new ContainerDefinition("ubuntu:14.04", "nc", "-l", "-p", "1234");
 		execution.addPublishedPort(1234);
 
 		String containerName = docker.start(execution);
